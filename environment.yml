@@ -1,0 +1,22 @@
+name: expembtx
+channels:
+  - conda-forge
+  - nvidia
+  - pytorch
+dependencies:
+  - python=3.9
+  - pytorch::pytorch=1.12.1
+  - nvidia::cudatoolkit<=11.6
+  - ca-certificates=2022.9.24
+  - openssl=1.1.1q
+  - pytorch-lightning=1.7.6
+  - wandb=0.13.1
+  - sympy=1.10.1
+  - certifi=2022.9.24
+  - simple-parsing=0.0.20
+  - ipython
+  - notebook=6.5.2
+  - scipy=1.9.1
+  - pip:
+      - zss==1.2.0
+prefix: ~/.miniforge/envs/expembtx

@@ -1,0 +1,1 @@
+add x mul div INT+ 1 INT+ 2 pow x INT+ 2	add mul div INT+ 3 INT+ 2 x mul div INT+ 1 INT+ 2 mul x add INT- 1 x
