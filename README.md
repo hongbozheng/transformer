@@ -20,10 +20,10 @@ git checkout dataset
 ```
 All the generated equivalent expressions are in the `equiv_exprs` folder
 
-Follow the instructions in section `Dataset(Python)` in `README.md` to properly create the `dataset` and `train`,
+Follow the instructions in section `Dataset (Python)` in `README.md` to properly create the `dataset` and `train`,
 `validation`, `test` splits.
 
-Make sure to `copy` the `data` folder in
+Make sure to `copy` the `data` folder under the
 [Equivalent Expressions Generation](https://gitlab.engr.illinois.edu/hongboz2/equivalent_expression_generation)
 repository to this repository.
 ```
