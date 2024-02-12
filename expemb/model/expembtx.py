@@ -346,9 +346,7 @@ class ExpEmbTx(pl.LightningModule):
                 continue
 
         accuracy = correct / batch_size
-        #new code
 
-        #
         return accuracy
 
 
@@ -642,25 +640,47 @@ class ExpEmbTx(pl.LightningModule):
             expr_1 = sp.simplify(expr=expr_1)
 
             if expr_0 - expr_1 == 0:
+                print(f"{expr_0}-{expr_1} correct")
                 return True
             else:
-                domain = continuous_domain(f=expr_0 - expr_1, symbol=x,
-                                           domain=Interval(start=0, end=10, left_open=True, right_open=False))
                 try:
-                    if isinstance(domain, sp.sets.sets.Union):
-                        start = float(domain.args[0].start)
-                        end = float(domain.args[0].end)
-                        return _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
-                    elif isinstance(domain, sp.sets.sets.Complement):
-                        return _check_equiv_compl(x=x, expr=expr_0 - expr_1, start=1, end=10, n=n, tol=tol)
-                    elif isinstance(domain, sp.sets.sets.Interval):
-                        start = float(domain.start)
-                        end = float(domain.end)
-                        return _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
-                    else:
-                        return False
+                    domain = continuous_domain(f=expr_0 - expr_1, symbol=x,
+                                               domain=Interval(start=0, end=10, left_open=True, right_open=False))
+                    try:
+                        if isinstance(domain, sp.sets.sets.Union):
+                            start = float(domain.args[0].start)
+                            end = float(domain.args[0].end)
+                            res = _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                            if res:
+                                print(f"[INFO]: {expr_0}-{expr_1} Union correct")
+                            else:
+                                print(f"[ERROR]: {expr_0}-{expr_1} Union incorrect")
+                            return res
+                        elif isinstance(domain, sp.sets.sets.Complement):
+                            res = _check_equiv_compl(x=x, expr=expr_0 - expr_1, start=1, end=10, n=n, tol=tol)
+                            if res:
+                                print(f"[INFO]: {expr_0}-{expr_1} Complement correct")
+                            else:
+                                print(f"[ERROR]: {expr_0}-{expr_1} Complement incorrect")
+                            return res
+                        elif isinstance(domain, sp.sets.sets.Interval):
+                            start = float(domain.start)
+                            end = float(domain.end)
+                            res = _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                            if res:
+                                print(f"[INFO]: {expr_0}-{expr_1} Interval correct")
+                            else:
+                                print(f"[ERROR]: {expr_0}-{expr_1} Interval incorrect")
+                            return res
+                        else:
+                            print(f"[ERROR]: Invalid domain type {domain}")
+                            return False
 
+                    except Exception as e:
+                        print(f"[ERROR]: {expr_0}-{expr_1} continous domain exception {e}")
+                        return False
                 except Exception as e:
+                    print(f"[ERROR]: {expr_0}-{expr_1} continous domain exception {e}")
                     return False
 
         def _are_equivalent_bool(exp1, exp2):
