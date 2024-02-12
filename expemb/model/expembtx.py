@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import sympy as sp
+from ..constants import *
 from typing import Optional, List
 from torch import Tensor
 from .txdecoder import *
@@ -610,11 +611,63 @@ class ExpEmbTx(pl.LightningModule):
         def _are_equivalent_poly(exp1, exp2):
             return sp.simplify(exp1 - exp2) == 0
 
+        def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+            fn = lambdify(args=x, expr=expr, modules=["numpy"])
+            rand_nums = numpy.random.uniform(low=start, high=end, size=n)
+            vals = fn(rand_nums)
+
+            res = numpy.all(vals <= tol)
+
+            return res
+
+        def _check_equiv_compl(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+            i = 0
+            while i < n:
+                fn = lambdify(args=x, expr=expr, modules=["numpy"])
+                rand_num = numpy.random.uniform(low=start, high=end, size=1)
+                val = fn(rand_num)
+                if val in S.Reals:
+                    if val > tol:
+                        return False
+                    i += 1
+
+            return True
+
+        def _are_equivalent_sympy(exp1, exp2):
+            x = VARIABLES['x']
+
+            expr_0 = prefix_to_sympy(expr=exp1)
+            expr_1 = prefix_to_sympy(expr=exp2)
+            expr_0 = sp.simplify(expr=expr_0)
+            expr_1 = sp.simplify(expr=expr_1)
+
+            if expr_0 - expr_1 == 0:
+                return True
+            else:
+                domain = continuous_domain(f=expr_0 - expr_1, symbol=x,
+                                           domain=Interval(start=0, end=10, left_open=True, right_open=False))
+                try:
+                    if isinstance(domain, sp.sets.sets.Union):
+                        start = float(domain.args[0].start)
+                        end = float(domain.args[0].end)
+                        return _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                    elif isinstance(domain, sp.sets.sets.Complement):
+                        return _check_equiv_compl(x=x, expr=expr_0 - expr_1, start=1, end=10, n=n, tol=tol)
+                    elif isinstance(domain, sp.sets.sets.Interval):
+                        start = float(domain.start)
+                        end = float(domain.end)
+                        return _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                    else:
+                        return False
+
+                except Exception as e:
+                    return False
+
         def _are_equivalent_bool(exp1, exp2):
             return not sp.logic.boolalg.simplify_logic(exp1 ^ exp2)
 
         return (self.bool_dataset and _are_equivalent_bool(exp1, exp2)) or \
-            (not self.bool_dataset and _are_equivalent_poly(exp1, exp2))
+            (not self.bool_dataset and _are_equivalent_sympy(exp1, exp2))
 
 
     def on_save_checkpoint(self, checkpoint) -> None:
