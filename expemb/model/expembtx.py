@@ -365,7 +365,10 @@ class ExpEmbTx(pl.LightningModule):
         for idx in range(batch_size):
             try:
                 src_prefix = src_exps[idx]#idx target
-                src_spexp = self.prefix_to_sympy(src_prefix)#convert target into sympy
+                try:
+                    src_spexp = self.prefix_to_sympy(src_prefix)#convert target into sympy
+                except Exception as e:
+                    print(f"[ERROR]: prefix_to_sympy error {e}")
                 decoded_list = predicted[:, idx]#prediction list
                 # print('decoded_list:', decoded_list)
                 predicted_prefix_list = [self.tokenizer.decode(decoded_list[:, _], True) for _ in range(beam_size)]#decode of prediction
@@ -373,7 +376,10 @@ class ExpEmbTx(pl.LightningModule):
                 equivalent = False
                 for predicted_prefix in predicted_prefix_list:
                     try:
-                        predicted_spexp = self.prefix_to_sympy(predicted_prefix)
+                        try:
+                            predicted_spexp = self.prefix_to_sympy(predicted_prefix)
+                        except Exception as e:
+                            print(f"[ERROR]: prefix_to_sympy error {e}")
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
