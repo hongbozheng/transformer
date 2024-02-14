@@ -608,7 +608,7 @@ class ExpEmbTx(pl.LightningModule):
     def are_equivalent(self, exp1, exp2):
         assert self.sympy_timeout > 0
 
-        @timeout(self.sympy_timeout)
+        # @timeout(self.sympy_timeout)
         def _are_equivalent_poly(exp1, exp2):
             return sp.simplify(exp1 - exp2) == 0
 
@@ -658,15 +658,15 @@ class ExpEmbTx(pl.LightningModule):
         def _are_equivalent_sympy(exp1, exp2):
             x = VARIABLES['x']
 
+            # try:
+            #     expr_0 = self.prefix_to_sympy(expr=exp1)
+            #     expr_1 = self.prefix_to_sympy(expr=exp2)
+            # except Exception as e:
+            #     print(f"[ERROR]: prefix_to_sympy exception {e}")
+            #     return False
             try:
-                expr_0 = self.prefix_to_sympy(expr=exp1)
-                expr_1 = self.prefix_to_sympy(expr=exp2)
-            except Exception as e:
-                print(f"[ERROR]: prefix_to_sympy exception {e}")
-                return False
-            try:
-                expr_0 = sp.simplify(expr=expr_0)
-                expr_1 = sp.simplify(expr=expr_1)
+                expr_0 = sp.simplify(expr=exp1)
+                expr_1 = sp.simplify(expr=exp2)
             except Exception as e:
                 print(f"[ERROR]: simplify exception {e}")
                 return False
