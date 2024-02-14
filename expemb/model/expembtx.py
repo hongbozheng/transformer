@@ -634,10 +634,18 @@ class ExpEmbTx(pl.LightningModule):
         def _are_equivalent_sympy(exp1, exp2):
             x = VARIABLES['x']
 
-            expr_0 = prefix_to_sympy(expr=exp1)
-            expr_1 = prefix_to_sympy(expr=exp2)
-            expr_0 = sp.simplify(expr=expr_0)
-            expr_1 = sp.simplify(expr=expr_1)
+            try:
+                expr_0 = prefix_to_sympy(expr=exp1)
+                expr_1 = prefix_to_sympy(expr=exp2)
+            except Exception as e:
+                print(f"[ERROR]: prefix_to_sympy exception {e}")
+                return False
+            try:
+                expr_0 = sp.simplify(expr=expr_0)
+                expr_1 = sp.simplify(expr=expr_1)
+            except Exception as e:
+                print(f"[ERROR]: simplify exception {e}")
+                return False
 
             if expr_0 - expr_1 == 0:
                 print(f"{expr_0}-{expr_1} correct")
@@ -677,7 +685,7 @@ class ExpEmbTx(pl.LightningModule):
                             return False
 
                     except Exception as e:
-                        print(f"[ERROR]: {expr_0}-{expr_1} continous domain exception {e}")
+                        print(f"[ERROR]: {expr_0}-{expr_1} eval exception {e}")
                         return False
                 except Exception as e:
                     print(f"[ERROR]: {expr_0}-{expr_1} continous domain exception {e}")
