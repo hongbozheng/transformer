@@ -4,6 +4,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
 import sympy as sp
+from sympy import *
+from sympy.calculus.util import continuous_domain
+import numpy
 from ..constants import *
 from typing import Optional, List
 from torch import Tensor
@@ -74,7 +77,7 @@ class ExpEmbTx(pl.LightningModule):
         lr: float = 0.0001,
         weight_decay: float = 0.0,
         beam_sizes: list = [],
-        sympy_timeout: int = 2,
+        sympy_timeout: int = 15,
         bool_dataset: bool = False,
         activation: str = "relu",
         label_smoothing: float = 0.0,
@@ -630,13 +633,34 @@ class ExpEmbTx(pl.LightningModule):
                     i += 1
 
             return True
+        
+        def _check_equiv_subs(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+            random_integer_sequence = []
+            for i in range(n):
+                random_integer_sequence.append(numpy.random.uniform(low=start, high=end))
+            for num in random_integer_sequence:
+                variation = expr.subs(x, num).evalf()
+                if variation > tol:
+                    return False              
+            return True
+        
+        def _check_equiv_compl_subs(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+            i=0
+            while i<n:
+                num = numpy.random.uniform(1, 10)
+                variation = expr.subs(x, num).evalf()
+                if variation in S.Reals:
+                    if variation > tol:
+                        return False
+                i += 1
+            return True     
 
         def _are_equivalent_sympy(exp1, exp2):
             x = VARIABLES['x']
 
             try:
-                expr_0 = prefix_to_sympy(expr=exp1)
-                expr_1 = prefix_to_sympy(expr=exp2)
+                expr_0 = self.prefix_to_sympy(expr=exp1)
+                expr_1 = self.prefix_to_sympy(expr=exp2)
             except Exception as e:
                 print(f"[ERROR]: prefix_to_sympy exception {e}")
                 return False
@@ -646,39 +670,39 @@ class ExpEmbTx(pl.LightningModule):
             except Exception as e:
                 print(f"[ERROR]: simplify exception {e}")
                 return False
-
-            if expr_0 - expr_1 == 0:
+            var = expr_0-expr_1
+            if var == 0:
                 print(f"{expr_0}-{expr_1} correct")
                 return True
             else:
                 try:
-                    domain = continuous_domain(f=expr_0 - expr_1, symbol=x,
+                    domain = continuous_domain(f=var, symbol=x,
                                                domain=Interval(start=0, end=10, left_open=True, right_open=False))
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
                             start = float(domain.args[0].start)
                             end = float(domain.args[0].end)
-                            res = _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                            res = _check_equiv_subs(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0}-{expr_1} Union correct")
+                                print(f"[INFO]: {expr_0} and {expr_1} are equivalent, type is Union")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} Union incorrect")
+                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Union")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
-                            res = _check_equiv_compl(x=x, expr=expr_0 - expr_1, start=1, end=10, n=n, tol=tol)
+                            res = _check_equiv_compl_subs(x=x, expr=var, start=1, end=10, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0}-{expr_1} Complement correct")
+                                print(f"[INFO]: {expr_0}-{expr_1} are equivalent, type is Complement")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} Complement incorrect")
+                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Complement")
                             return res
                         elif isinstance(domain, sp.sets.sets.Interval):
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv(x=x, expr=expr_0 - expr_1, start=start, end=end, n=n, tol=tol)
+                            res = _check_equiv_subs(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0}-{expr_1} Interval correct")
+                                print(f"[INFO]: {expr_0}-{expr_1} are equivalent, type is Interval")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} Interval incorrect")
+                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Interval")
                             return res
                         else:
                             print(f"[ERROR]: Invalid domain type {domain}")
