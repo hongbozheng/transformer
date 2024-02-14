@@ -684,7 +684,7 @@ class ExpEmbTx(pl.LightningModule):
                 return False
             var = expr_0-expr_1
             if var == 0:
-                print(f"{expr_0}-{expr_1} correct")
+                print(f"{expr_0} and {expr_1} are equivalent, simplify")
                 return True
             else:
                 try:
