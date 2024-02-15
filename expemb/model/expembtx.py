@@ -664,7 +664,7 @@ class ExpEmbTx(pl.LightningModule):
                 if variation in S.Reals:
                     if variation > tol:
                         return False
-                i += 1
+                    i += 1
             return True     
 
         def _are_equivalent_sympy(exp1, exp2):
