@@ -360,32 +360,21 @@ class ExpEmbTx(pl.LightningModule):
 
 
     def compute_accuracy_beam(self, batch: Tensor, beam_size: int):
-
         src, src_exps = batch
-        # print('src:', src)
-        # print('src_exp:', src_exps)
         batch_size = len(src_exps)
-        predicted, _ = self.generate_beam(src, beam_size)#prediction in beam size
-        # print('predicted:', predicted)
+        predicted, _ = self.generate_beam(src, beam_size)
         correct = 0
         for idx in range(batch_size):
             try:
-                src_prefix = src_exps[idx]#idx target
-                try:
-                    src_spexp = self.prefix_to_sympy(src_prefix)#convert target into sympy
-                except Exception as e:
-                    print(f"[ERROR]: prefix_to_sympy error {e}")
-                decoded_list = predicted[:, idx]#prediction list
-                # print('decoded_list:', decoded_list)
-                predicted_prefix_list = [self.tokenizer.decode(decoded_list[:, _], True) for _ in range(beam_size)]#decode of prediction
-                predicted_prefix_list = [" ".join(_.split(" ")[1:-1]) for _ in predicted_prefix_list]#remove SOE and EOE from expressions
+                src_prefix = src_exps[idx]
+                src_spexp = self.prefix_to_sympy(src_prefix)
+                decoded_list = predicted[:, idx]
+                predicted_prefix_list = [self.tokenizer.decode(decoded_list[:, _], True) for _ in range(beam_size)]
+                predicted_prefix_list = [" ".join(_.split(" ")[1:-1]) for _ in predicted_prefix_list]
                 equivalent = False
                 for predicted_prefix in predicted_prefix_list:
                     try:
-                        try:
-                            predicted_spexp = self.prefix_to_sympy(predicted_prefix)
-                        except Exception as e:
-                            print(f"[ERROR]: prefix_to_sympy error {e}")
+                        predicted_spexp = self.prefix_to_sympy(predicted_prefix)
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
@@ -401,7 +390,6 @@ class ExpEmbTx(pl.LightningModule):
                 continue
 
         accuracy = correct / batch_size
-        #print('predicted_prefix_list:', predicted_prefix_list)
         return accuracy
 
 
@@ -620,11 +608,11 @@ class ExpEmbTx(pl.LightningModule):
     def are_equivalent(self, exp1, exp2):
         assert self.sympy_timeout > 0
 
-        @timeout(seconds=secs)
+        @timeout(seconds=4)
         def _simplify(expr: Expr) -> Expr:
             return sp.simplify(expr=expr)
 
-        @timeout(seconds=secs)
+        @timeout(seconds=4)
         def _cont_domain(expr: Expr, symbol: Symbol):
             return continuous_domain(f=expr, symbol=symbol,
                                      domain=Interval(start=0, end=10, left_open=True, right_open=False))
