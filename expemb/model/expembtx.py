@@ -653,14 +653,14 @@ class ExpEmbTx(pl.LightningModule):
                         if isinstance(domain, sp.sets.sets.Union):
                             start = float(domain.args[0].start)
                             end = float(domain.args[0].end)
-                            res = _check_equiv(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Union")
                             else:
                                 print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Union")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
-                            res = _check_equiv_compl(x=x, expr=var, start=1, end=10, n=3, tol=1e-6)
+                            res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Complement")
                             else:
@@ -669,7 +669,7 @@ class ExpEmbTx(pl.LightningModule):
                         elif isinstance(domain, sp.sets.sets.Interval):
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Interval")
                             else:
