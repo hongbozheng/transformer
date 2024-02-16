@@ -620,111 +620,89 @@ class ExpEmbTx(pl.LightningModule):
     def are_equivalent(self, exp1, exp2):
         assert self.sympy_timeout > 0
 
-        # @timeout(self.sympy_timeout)
-        def _are_equivalent_poly(exp1, exp2):
-            return sp.simplify(exp1 - exp2) == 0
+        @timeout(seconds=secs)
+        def _simplify(expr: Expr) -> Expr:
+            return sp.simplify(expr=expr)
+
+        @timeout(seconds=secs)
+        def _cont_domain(expr: Expr, symbol: Symbol):
+            return continuous_domain(f=expr, symbol=symbol,
+                                     domain=Interval(start=0, end=10, left_open=True, right_open=False))
 
         def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            fn = lambdify(args=x, expr=expr, modules=["numpy"])
             rand_nums = numpy.random.uniform(low=start, high=end, size=n)
-            vals = fn(rand_nums)
+            for num in rand_nums:
+                val = expr.subs(x, num).evalf()
+                if val > tol:
+                    return False
 
-            res = numpy.all(vals <= tol)
-
-            return res
+            return True
 
         def _check_equiv_compl(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
             i = 0
             while i < n:
-                fn = lambdify(args=x, expr=expr, modules=["numpy"])
                 rand_num = numpy.random.uniform(low=start, high=end, size=1)
-                val = fn(rand_num)
+                val = expr.subs(x, rand_num).evalf()
                 if val in S.Reals:
                     if val > tol:
                         return False
                     i += 1
 
             return True
-        
-        def _check_equiv_subs(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            random_integer_sequence = []
-            for i in range(n):
-                random_integer_sequence.append(numpy.random.uniform(low=start, high=end))
-            for num in random_integer_sequence:
-                variation = expr.subs(x, num).evalf()
-                if variation > tol:
-                    return False              
-            return True
-        
-        def _check_equiv_compl_subs(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            i=0
-            while i<n:
-                num = numpy.random.uniform(1, 10)
-                variation = expr.subs(x, num).evalf()
-                if variation in S.Reals:
-                    if variation > tol:
-                        return False
-                    i += 1
-            return True     
 
         def _are_equivalent_sympy(exp1, exp2):
             x = VARIABLES['x']
 
-            # try:
-            #     expr_0 = self.prefix_to_sympy(expr=exp1)
-            #     expr_1 = self.prefix_to_sympy(expr=exp2)
-            # except Exception as e:
-            #     print(f"[ERROR]: prefix_to_sympy exception {e}")
-            #     return False
             try:
-                expr_0 = sp.simplify(expr=exp1)
-                expr_1 = sp.simplify(expr=exp2)
+                expr_0 = _simplify(expr=exp1)
+                expr_1 = _simplify(expr=exp2)
             except Exception as e:
-                print(f"[ERROR]: simplify exception {e}")
+                print(f"[ERROR]: {exp1} & {exp2} simplify exception {e}")
                 return False
-            var = expr_0-expr_1
-            if var == 0:
-                print(f"{expr_0} and {expr_1} are equivalent, simplify")
+
+            expr = expr_0 - expr_1
+
+            if expr == 0:
+                print(f"[INFO]: {exp1} & {exp2} are equivalent, simplify")
                 return True
             else:
                 try:
-                    domain = continuous_domain(f=var, symbol=x,
-                                               domain=Interval(start=0, end=10, left_open=True, right_open=False))
+                    domain = _cont_domain(expr=expr, symbol=x)
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
                             start = float(domain.args[0].start)
                             end = float(domain.args[0].end)
-                            res = _check_equiv_subs(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0} and {expr_1} are equivalent, type is Union")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Union")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Union")
+                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Union")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
-                            res = _check_equiv_compl_subs(x=x, expr=var, start=1, end=10, n=3, tol=1e-6)
+                            res = _check_equiv_compl(x=x, expr=var, start=1, end=10, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0}-{expr_1} are equivalent, type is Complement")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Complement")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Complement")
+                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Complement")
                             return res
                         elif isinstance(domain, sp.sets.sets.Interval):
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv_subs(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=var, start=start, end=end, n=3, tol=1e-6)
                             if res:
-                                print(f"[INFO]: {expr_0}-{expr_1} are equivalent, type is Interval")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Interval")
                             else:
-                                print(f"[ERROR]: {expr_0}-{expr_1} are non-equivalent, type is Interval")
+                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Interval")
                             return res
                         else:
                             print(f"[ERROR]: Invalid domain type {domain}")
                             return False
 
                     except Exception as e:
-                        print(f"[ERROR]: {expr_0}-{expr_1} eval exception {e}")
+                        print(f"[ERROR]: {exp1} & {exp2} eval exception {e}")
                         return False
                 except Exception as e:
-                    print(f"[ERROR]: {expr_0}-{expr_1} continous domain exception {e}")
+                    print(f"[ERROR]: {exp1} & {exp2} continous domain exception {e}")
                     return False
 
         def _are_equivalent_bool(exp1, exp2):
