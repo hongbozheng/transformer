@@ -334,17 +334,11 @@ class ExpEmbTx(pl.LightningModule):
         for idx in range(batch_size):
             try:
                 src_prefix = src_exps[idx]
-                try:
-                    src_sp = self.prefix_to_sympy(src_prefix)
-                except Exception as e:
-                    print(f"[ERROR]: prefix_to_sympy error {e}")
+                src_sp = self.prefix_to_sympy(src_prefix)
                 tensor = predicted[:, idx]
                 predicted_prefix = self.tokenizer.decode(tensor, True)
                 predicted_prefix = " ".join(predicted_prefix.split(" ")[1:-1])
-                try:
-                    predicted_sp = self.prefix_to_sympy(predicted_prefix)
-                except Exception as e:
-                    print(f"[ERROR]: prefix_to_sympy error {e}")
+                predicted_sp = self.prefix_to_sympy(predicted_prefix)
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
@@ -355,7 +349,6 @@ class ExpEmbTx(pl.LightningModule):
                 continue
 
         accuracy = correct / batch_size
-
         return accuracy
 
 
