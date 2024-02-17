@@ -679,7 +679,7 @@ class ExpEmbTx(pl.LightningModule):
                             return False
 
                     except Exception as e:
-                        print(f"[ERROR]: {exp1} & {exp2} eval exception {e}")
+                        print(f"[ERROR]: {exp1} & {exp2} case {case} eval exception {e}")
                         return False
                 except Exception as e:
                     print(f"[ERROR]: {exp1} & {exp2} continous domain exception {e}")
