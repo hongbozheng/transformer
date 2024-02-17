@@ -612,8 +612,7 @@ class ExpEmbTx(pl.LightningModule):
 
         @timeout(seconds=secs*2)
         def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            print(start, " ", end)
-            print(n)
+            print(start, " ", end, " ", n, " ", tol)
             i = 0
             while i < n:
                 rand_num = numpy.random.uniform(low=start, high=end, size=1)
