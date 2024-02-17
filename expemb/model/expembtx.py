@@ -598,28 +598,20 @@ class ExpEmbTx(pl.LightningModule):
         return _prefix_to_sympy(prefix)
 
 
-    def are_equivalent(self, exp1, exp2):
+    def are_equivalent(self, exp1, exp2, n: int, tol: float, secs: int):
         assert self.sympy_timeout > 0
 
-        @timeout(seconds=4)
+        @timeout(seconds=secs)
         def _simplify(expr: Expr) -> Expr:
             return sp.simplify(expr=expr)
 
-        @timeout(seconds=4)
+        @timeout(seconds=secs)
         def _cont_domain(expr: Expr, symbol: Symbol):
             return continuous_domain(f=expr, symbol=symbol,
                                      domain=Interval(start=0, end=10, left_open=True, right_open=False))
 
+        @timeout(seconds=secs*2)
         def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            rand_nums = numpy.random.uniform(low=start, high=end, size=n)
-            for num in rand_nums:
-                val = expr.subs(x, num).evalf()
-                if val > tol:
-                    return False
-
-            return True
-
-        def _check_equiv_compl(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
             i = 0
             while i < n:
                 rand_num = numpy.random.uniform(low=start, high=end, size=1)
@@ -631,7 +623,7 @@ class ExpEmbTx(pl.LightningModule):
 
             return True
 
-        def _are_equivalent_sympy(exp1, exp2):
+        def _are_equivalent_sympy(exp1, exp2, n: int, tol: float) -> bool:
             x = VARIABLES['x']
 
             try:
@@ -651,16 +643,19 @@ class ExpEmbTx(pl.LightningModule):
                     domain = _cont_domain(expr=expr, symbol=x)
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
-                            start = float(domain.args[0].start)
-                            end = float(domain.args[0].end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
+                            if isinstance(domain.args[0], sp.sets.sets.Complement):
+                                res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
+                            else:
+                                start = float(domain.args[0].start)
+                                end = float(domain.args[0].end)
+                                res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Union")
                             else:
                                 print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Union")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
-                            res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Complement")
                             else:
@@ -669,7 +664,7 @@ class ExpEmbTx(pl.LightningModule):
                         elif isinstance(domain, sp.sets.sets.Interval):
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
                                 print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Interval")
                             else:
@@ -690,7 +685,7 @@ class ExpEmbTx(pl.LightningModule):
             return not sp.logic.boolalg.simplify_logic(exp1 ^ exp2)
 
         return (self.bool_dataset and _are_equivalent_bool(exp1, exp2)) or \
-            (not self.bool_dataset and _are_equivalent_sympy(exp1, exp2))
+            (not self.bool_dataset and _are_equivalent_sympy(exp1=exp1, exp2=exp2, n=n, tol=tol))
 
 
     def on_save_checkpoint(self, checkpoint) -> None:
