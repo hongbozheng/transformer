@@ -342,7 +342,7 @@ class ExpEmbTx(pl.LightningModule):
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
-                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(src_sp, predicted_sp)
+                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, n=3, tol=1e-6, secs=4)
                 if equivalent:
                     correct += 1
             except Exception as e:
@@ -371,7 +371,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(src_spexp, predicted_spexp))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(src_spexp, predicted_spexp, n=3, tol=1e-6, secs=4))
 
                         if equivalent:
                             break
