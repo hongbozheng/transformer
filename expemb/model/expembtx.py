@@ -342,7 +342,7 @@ class ExpEmbTx(pl.LightningModule):
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
-                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, n=3, tol=1e-6, secs=4)
+                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, secs=4)
                 if equivalent:
                     correct += 1
             except Exception as e:
@@ -371,7 +371,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, n=3, tol=1e-6, secs=4))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, secs=4))
 
                         if equivalent:
                             break
@@ -598,7 +598,7 @@ class ExpEmbTx(pl.LightningModule):
         return _prefix_to_sympy(prefix)
 
 
-    def are_equivalent(self, exp1, exp2, n: int, tol: float, secs: int):
+    def are_equivalent(self, exp1, exp2, secs: int):
         assert self.sympy_timeout > 0
 
         @timeout(seconds=secs)
@@ -610,6 +610,7 @@ class ExpEmbTx(pl.LightningModule):
             return continuous_domain(f=expr, symbol=symbol,
                                      domain=Interval(start=0, end=10, left_open=True, right_open=False))
 
+        @timeout(seconds=secs*2)
         def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
             print(start, " ", end)
             print(n)
@@ -624,7 +625,7 @@ class ExpEmbTx(pl.LightningModule):
 
             return True
 
-        def _are_equivalent_sympy(exp1, exp2, n: int, tol: float) -> bool:
+        def _are_equivalent_sympy(exp1, exp2) -> bool:
             x = VARIABLES['x']
 
             try:
@@ -644,10 +645,14 @@ class ExpEmbTx(pl.LightningModule):
                     domain = _cont_domain(expr=expr, symbol=x)
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
-                            case = "Union"
-                            start = float(domain.args[0].start)
-                            end = float(domain.args[0].end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
+                            if isinstance(domain.args[0], sp.sets.sets.Complement):
+                                case = "Union-Comp"
+                                res = _check_equiv(x=x, expr=expr, start=1, end=10, n=3, tol=1e-6)
+                            else:
+                                case = "Union"
+                                start = float(domain.args[0].start)
+                                end = float(domain.args[0].end)
+                                res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
@@ -655,7 +660,7 @@ class ExpEmbTx(pl.LightningModule):
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
                             case = "Complement"
-                            res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
+                            res = _check_equiv(x=x, expr=expr, start=1, end=10, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
@@ -665,7 +670,7 @@ class ExpEmbTx(pl.LightningModule):
                             case = "Interval"
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
                             if res:
                                 print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
@@ -686,7 +691,7 @@ class ExpEmbTx(pl.LightningModule):
             return not sp.logic.boolalg.simplify_logic(exp1 ^ exp2)
 
         return (self.bool_dataset and _are_equivalent_bool(exp1, exp2)) or \
-            (not self.bool_dataset and _are_equivalent_sympy(exp1=exp1, exp2=exp2, n=n, tol=tol))
+            (not self.bool_dataset and _are_equivalent_sympy(exp1, exp2))
 
 
     def on_save_checkpoint(self, checkpoint) -> None:
