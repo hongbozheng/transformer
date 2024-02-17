@@ -371,7 +371,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(src_spexp, predicted_spexp, n=3, tol=1e-6, secs=4))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, n=3, tol=1e-6, secs=4))
 
                         if equivalent:
                             break
@@ -643,32 +643,36 @@ class ExpEmbTx(pl.LightningModule):
                     domain = _cont_domain(expr=expr, symbol=x)
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
-                            if isinstance(domain.args[0], sp.sets.sets.Complement):
-                                res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
-                            else:
-                                start = float(domain.args[0].start)
-                                end = float(domain.args[0].end)
-                                res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
+                            # if isinstance(domain.args[0], sp.sets.sets.Complement):
+                            #     case = "Union-Complement"
+                            #     res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
+                            # else:
+                            case = "Union"
+                            start = float(domain.args[0].start)
+                            end = float(domain.args[0].end)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Union")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, case {case}")
                             else:
                                 print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Union")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
+                            case = "Complement"
                             res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Complement")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, case {case}")
                             else:
-                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Complement")
+                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, case {case}")
                             return res
                         elif isinstance(domain, sp.sets.sets.Interval):
+                            case = "Interval"
                             start = float(domain.start)
                             end = float(domain.end)
                             res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Interval")
+                                print(f"[INFO]: {exp1} & {exp2} are equivalent, case {case}")
                             else:
-                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Interval")
+                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, case {case}")
                             return res
                         else:
                             print(f"[ERROR]: Invalid domain type {domain}")
