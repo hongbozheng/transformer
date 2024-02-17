@@ -342,7 +342,7 @@ class ExpEmbTx(pl.LightningModule):
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
-                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(src_sp, predicted_sp)
+                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, n=3, tol=1e-6, secs=4)
                 if equivalent:
                     correct += 1
             except Exception as e:
@@ -371,7 +371,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(src_spexp, predicted_spexp))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, n=3, tol=1e-6, secs=4))
 
                         if equivalent:
                             break
@@ -598,28 +598,21 @@ class ExpEmbTx(pl.LightningModule):
         return _prefix_to_sympy(prefix)
 
 
-    def are_equivalent(self, exp1, exp2):
+    def are_equivalent(self, exp1, exp2, n: int, tol: float, secs: int):
         assert self.sympy_timeout > 0
 
-        @timeout(seconds=4)
+        @timeout(seconds=secs)
         def _simplify(expr: Expr) -> Expr:
             return sp.simplify(expr=expr)
 
-        @timeout(seconds=4)
+        @timeout(seconds=secs)
         def _cont_domain(expr: Expr, symbol: Symbol):
             return continuous_domain(f=expr, symbol=symbol,
                                      domain=Interval(start=0, end=10, left_open=True, right_open=False))
 
         def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            rand_nums = numpy.random.uniform(low=start, high=end, size=n)
-            for num in rand_nums:
-                val = expr.subs(x, num).evalf()
-                if val > tol:
-                    return False
-
-            return True
-
-        def _check_equiv_compl(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+            print(start, " ", end)
+            print(n)
             i = 0
             while i < n:
                 rand_num = numpy.random.uniform(low=start, high=end, size=1)
@@ -631,66 +624,69 @@ class ExpEmbTx(pl.LightningModule):
 
             return True
 
-        def _are_equivalent_sympy(exp1, exp2):
+        def _are_equivalent_sympy(exp1, exp2, n: int, tol: float) -> bool:
             x = VARIABLES['x']
 
             try:
                 expr_0 = _simplify(expr=exp1)
                 expr_1 = _simplify(expr=exp2)
             except Exception as e:
-                print(f"[ERROR]: {exp1} & {exp2} simplify exception {e}")
+                print(f"[ERROR]: simplify exception {e}; {exp1} & {exp2}")
                 return False
 
             expr = expr_0 - expr_1
 
             if expr == 0:
-                print(f"[INFO]: {exp1} & {exp2} are equivalent, simplify")
+                print(f"[INFO]:  equivalent, simplify; {exp1} & {exp2}")
                 return True
             else:
                 try:
                     domain = _cont_domain(expr=expr, symbol=x)
                     try:
                         if isinstance(domain, sp.sets.sets.Union):
+                            case = "Union"
                             start = float(domain.args[0].start)
                             end = float(domain.args[0].end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Union")
+                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Union")
+                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
-                            res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=3, tol=1e-6)
+                            case = "Complement"
+                            res = _check_equiv(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Complement")
+                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Complement")
+                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
                             return res
                         elif isinstance(domain, sp.sets.sets.Interval):
+                            case = "Interval"
                             start = float(domain.start)
                             end = float(domain.end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=3, tol=1e-6)
+                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]: {exp1} & {exp2} are equivalent, type is Interval")
+                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: {exp1} & {exp2} are non-equivalent, type is Interval")
+                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
                             return res
                         else:
                             print(f"[ERROR]: Invalid domain type {domain}")
                             return False
 
                     except Exception as e:
-                        print(f"[ERROR]: {exp1} & {exp2} eval exception {e}")
+                        print(f"[ERROR]: eval exception {e}, {case:<10}; {exp1} & {exp2} ")
                         return False
                 except Exception as e:
-                    print(f"[ERROR]: {exp1} & {exp2} continous domain exception {e}")
+                    print(f"[ERROR]: continuous domain exception {e}; {exp1} & {exp2}")
                     return False
 
         def _are_equivalent_bool(exp1, exp2):
             return not sp.logic.boolalg.simplify_logic(exp1 ^ exp2)
 
         return (self.bool_dataset and _are_equivalent_bool(exp1, exp2)) or \
-            (not self.bool_dataset and _are_equivalent_sympy(exp1, exp2))
+            (not self.bool_dataset and _are_equivalent_sympy(exp1=exp1, exp2=exp2, n=n, tol=tol))
 
 
     def on_save_checkpoint(self, checkpoint) -> None:
