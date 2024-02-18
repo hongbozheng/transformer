@@ -311,6 +311,7 @@ class ExpEmbTx(pl.LightningModule):
     def validation_step(self, batch: tuple, batch_idx: int):
         src, _ = batch
         accuracy = self.compute_accuracy(batch)
+        print(f"[INFO]: Validation accuracy {accuracy}")
         self.log("val/accuracy", accuracy, on_epoch = True, batch_size = src.size(1), sync_dist = True)
         return accuracy
 
