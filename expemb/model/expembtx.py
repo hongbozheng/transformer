@@ -647,7 +647,7 @@ class ExpEmbTx(pl.LightningModule):
             expr = expr_0 - expr_1
 
             if expr == 0:
-                print(f"[INFO]:  equivalent, simplify; {exp1} & {exp2}")
+                print(f"[INFO]:  simplify  , equivalent    ; {exp1} & {exp2}")
                 return True
             else:
                 try:
@@ -663,17 +663,17 @@ class ExpEmbTx(pl.LightningModule):
                                 end = float(domain.args[0].end)
                                 res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
+                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
+                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
                             return res
                         elif isinstance(domain, sp.sets.sets.Complement):
                             case = "Complement"
                             res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
+                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
+                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
                             return res
                         elif isinstance(domain, sp.sets.sets.Interval):
                             case = "Interval"
@@ -681,16 +681,16 @@ class ExpEmbTx(pl.LightningModule):
                             end = float(domain.end)
                             res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
                             if res:
-                                print(f"[INFO]:  equivalent,     {case:<10}; {exp1} & {exp2}")
+                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
                             else:
-                                print(f"[ERROR]: non-equivalent, {case:<10}; {exp1} & {exp2}")
+                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
                             return res
                         else:
                             print(f"[ERROR]: Invalid domain type {domain}")
                             return False
 
                     except Exception as e:
-                        print(f"[ERROR]: eval exception {e}, {case:<10}; {exp1} & {exp2} ")
+                        print(f"[ERROR]: {case:<10}, eval exception {e}; {exp1} & {exp2} ")
                         return False
                 except Exception as e:
                     print(f"[ERROR]: continuous domain exception {e}; {exp1} & {exp2}")
