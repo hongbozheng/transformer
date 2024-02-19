@@ -56,7 +56,7 @@ class TestingArguments(Serializable):
     save_dir: str                                # Directory stored best & last model.
     full_file: Optional[str] = None              # Path to full dataset (only used in SemVec).
     beam_sizes: Optional[List[int]] = None       # Beam sizes to use for testing.
-    sympy_timeout: Optional[int] = None        # Timeout for SymPy operations.
+    sympy_timeout: Optional[int] = None          # Timeout for SymPy operations.
     batch_size: int = 64                         # Testing batch size.
     ckpt_name: str = "best"                      # Specify the ckpt name to test.
     max_seq_len: int = 512                       # Maximum sequence length. Expressions longer than this value will be skipped.
