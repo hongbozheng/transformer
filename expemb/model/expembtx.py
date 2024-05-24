@@ -343,7 +343,7 @@ class ExpEmbTx(pl.LightningModule):
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
-                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, n=3, tol=1e-6, secs=4)
+                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, secs=10, start=25, end=75, n=3, tol=1e-10)
                 if equivalent:
                     correct += 1
             except Exception as e:
@@ -372,7 +372,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, n=3, tol=1e-6, secs=4))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, secs=10, start=25, end=75, n=3, tol=1e-10))
 
                         if equivalent:
                             break
@@ -599,38 +599,49 @@ class ExpEmbTx(pl.LightningModule):
         return _prefix_to_sympy(prefix)
 
 
-    def are_equivalent(self, exp1, exp2, n: int, tol: float, secs: int):
+    def are_equivalent(
+            self,
+            exp1,
+            exp2,
+            secs: int,
+            start: float,
+            end: float,
+            n: int,
+            tol: float
+    ):
         assert self.sympy_timeout > 0
 
         @timeout(seconds=secs)
         def _simplify(expr: Expr) -> Expr:
             return sp.simplify(expr=expr)
 
-        @timeout(seconds=secs)
-        def _cont_domain(expr: Expr, symbol: Symbol):
-            return continuous_domain(f=expr, symbol=symbol,
-                                     domain=Interval(start=0, end=10, left_open=True, right_open=False))
+        # @timeout(seconds=secs)
+        # def _cont_domain(expr: Expr, symbol: Symbol):
+        #     return continuous_domain(
+        #         f=expr,
+        #         symbol=symbol,
+        #         domain=Interval(
+        #             start=0,
+        #             end=10,
+        #             left_open=True,
+        #             right_open=False,
+        #         )
+        #     )
 
-        @timeout(seconds=secs*2)
-        def _check_equiv(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
+        @timeout(seconds=secs)
+        def _check_equiv(
+                x: Symbol,
+                expr: Expr,
+                start: float,
+                end: float,
+                n: int,
+                tol: float,
+        ) -> bool:
             rand_nums = numpy.random.uniform(low=start, high=end, size=n)
             for num in rand_nums:
                 val = expr.subs(x, num).evalf()
                 if val > tol:
                     return False
-
-            return True
-
-        @timeout(seconds=secs*2)
-        def _check_equiv_compl(x: Symbol, expr: Expr, start: float, end: float, n: int, tol: float) -> bool:
-            i = 0
-            while i < n:
-                rand_num = numpy.random.uniform(low=start, high=end, size=1)
-                val = expr.subs(x, rand_num).evalf()
-                if val in S.Reals:
-                    if val > tol:
-                        return False
-                    i += 1
 
             return True
 
@@ -647,53 +658,25 @@ class ExpEmbTx(pl.LightningModule):
             expr = expr_0 - expr_1
 
             if expr == 0:
-                print(f"[INFO]:  simplify  , equivalent    ; {exp1} & {exp2}")
+                print(f"[INFO]:  simplify  , equiv    ; {exp1} & {exp2}")
                 return True
             else:
                 try:
-                    domain = _cont_domain(expr=expr, symbol=x)
-                    try:
-                        if isinstance(domain, sp.sets.sets.Union):
-                            if isinstance(domain.args[0], sp.sets.sets.Complement):
-                                case = "Union-Comp"
-                                res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
-                            else:
-                                case = "Union"
-                                start = float(domain.args[0].start)
-                                end = float(domain.args[0].end)
-                                res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
-                            if res:
-                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
-                            else:
-                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
-                            return res
-                        elif isinstance(domain, sp.sets.sets.Complement):
-                            case = "Complement"
-                            res = _check_equiv_compl(x=x, expr=expr, start=1, end=10, n=n, tol=tol)
-                            if res:
-                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
-                            else:
-                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
-                            return res
-                        elif isinstance(domain, sp.sets.sets.Interval):
-                            case = "Interval"
-                            start = float(domain.start)
-                            end = float(domain.end)
-                            res = _check_equiv(x=x, expr=expr, start=start, end=end, n=n, tol=tol)
-                            if res:
-                                print(f"[INFO]:  {case:<10}, equivalent    ; {exp1} & {exp2}")
-                            else:
-                                print(f"[ERROR]: {case:<10}, non-equivalent; {exp1} & {exp2}")
-                            return res
-                        else:
-                            print(f"[ERROR]: Invalid domain type {domain}")
-                            return False
-
-                    except Exception as e:
-                        print(f"[ERROR]: {case:<10}, eval exception {e}; {exp1} & {exp2} ")
-                        return False
+                    equiv = _check_equiv(
+                        x=x,
+                        expr=expr,
+                        start=start,
+                        end=end,
+                        n=n,
+                        tol=tol,
+                    )
+                    if equiv:
+                        print(f"subs_evalf, equiv    ; {exp1} & {exp2}")
+                    else:
+                        print(f"subs_evalf, non-equiv; {exp1} & {exp2}")
+                    return equiv
                 except Exception as e:
-                    print(f"[ERROR]: continuous domain exception {e}; {exp1} & {exp2}")
+                    print(f"_check_equiv exception {e}; {exp1} & {exp2}")
                     return False
 
         def _are_equivalent_bool(exp1, exp2):
