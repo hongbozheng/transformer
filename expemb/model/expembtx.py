@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 import sympy as sp
 from sympy import *
 from sympy.calculus.util import continuous_domain
-import numpy
+import numpy as np
 from ..constants import *
 from typing import Optional, List
 from torch import Tensor
@@ -637,10 +637,10 @@ class ExpEmbTx(pl.LightningModule):
                 n: int,
                 tol: float,
         ) -> bool:
-            rand_nums = numpy.random.uniform(low=start, high=end, size=n)
+            rand_nums = np.random.uniform(low=start, high=end, size=n)
             for num in rand_nums:
                 val = expr.subs(x, num).evalf()
-                if val > tol:
+                if abs(val) > tol:
                     return False
 
             return True
