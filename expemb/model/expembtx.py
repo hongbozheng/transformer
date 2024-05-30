@@ -671,12 +671,12 @@ class ExpEmbTx(pl.LightningModule):
                         tol=tol,
                     )
                     if equiv:
-                        print(f"subs_evalf, equiv    ; {exp1} & {exp2}")
+                        print(f"[INFO]:  subs_evalf, equiv    ; {exp1} & {exp2}")
                     else:
-                        print(f"subs_evalf, non-equiv; {exp1} & {exp2}")
+                        print(f"[ERROR]: subs_evalf, non-equiv; {exp1} & {exp2}")
                     return equiv
                 except Exception as e:
-                    print(f"_check_equiv exception {e}; {exp1} & {exp2}")
+                    print(f"[ERROR]: _check_equiv exception {e}; {exp1} & {exp2}")
                     return False
 
         def _are_equivalent_bool(exp1, exp2):
