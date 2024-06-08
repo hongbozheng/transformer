@@ -1,3 +1,5 @@
+from typing import Tuple
+from config import START, END, N, TOL, SECS
 from torch import Tensor
 from torch.utils.data import DataLoader
 import torch
@@ -5,6 +7,13 @@ import torch.nn as nn
 from avg_meter import AverageMeter
 from tokenizer import Tokenizer
 from tqdm import tqdm
+from timeout import timeout
+import sympy as sp
+from sympy import Expr, Symbol
+from refactor import prefix_to_sympy
+import numpy as np
+from components import VARIABLES
+import logger
 
 
 def greedy_decode(
@@ -15,35 +24,163 @@ def greedy_decode(
         seq_len: int,
         tokenizer: Tokenizer,
 ) -> Tensor:
-    memory = model(src=src, src_mask=src_mask)
-    pred = torch.full(
-        size=(1, 1),
-        fill_value=tokenizer.components["SOE"],
+    memory = model.encode(x=src, mask=src_mask)
+    # [batch_size, 1] of "SOE"
+    tgt = torch.full(
+        size=(src.size(dim=0), 1),
+        fill_value=tokenizer.comp2idx["SOE"],
         dtype=torch.int64,
         device=device,
     )
+    # [batch_size, 1]
+    done = torch.zeros(size=(src.size(dim=0), 1), dtype=torch.bool, device=device)
     for i in range(seq_len-1):
-        tgt_mask = causal_mask(size=pred.size(dim=0)).type(torch.bool).to(device=device)
-        out = model.decode(x=, memory=memory, tgt_mask=tgt_mask, src_mask=src_mask)
-        prob = model.proj(x=out[:, -1])
-        _, nxt_word = torch.max(input=prob, dim=1)
-        nxt_word = nxt_word.item()
-
-        pred = torch.cat(
-            tensors=[
-                pred,
-                torch.full(
-                    size=(1, 1),
-                    fill_value=nxt_word,
-                    dtype=torch.int64,
-                    device=device
-                ),
-            ], dim=0
+        tgt_mask = torch.tril(
+            input=torch.ones(
+                size=(tgt.size(dim=0), 1, tgt.size(dim=1), tgt.size(dim=1))
+            ),
+            diagonal=0,
+        ).to(dtype=torch.uint8)
+        print(tgt_mask, tgt_mask.size())
+        logits = model.decode(
+            x=tgt,
+            memory=memory,
+            tgt_mask=tgt_mask,
+            mem_mask=src_mask,
         )
+        logits = model.proj(x=logits[:, -1])
+        print("after proj")
+        print(logits, logits.size())
+        _, nxt_words = torch.max(input=logits, dim=1, keepdim=True)
+        print("nxt words")
+        print(nxt_words, nxt_words.size())
+        tgt = torch.cat(tensors=[tgt, nxt_words], dim=1)
+        print("tgt")
+        print(tgt, tgt.size())
 
-        if nxt_word == tokenizer.components["EOE"]:
+        done |= (nxt_words == tokenizer.comp2idx["EOE"])
+        print("done", done)
+
+        if done.all():
             break
-    return pred
+
+    return tgt
+
+
+def equiv(
+        expr_pair: Tuple[str, str],
+        start: float,
+        end: float,
+        n: int,
+        tol: float,
+        secs: int,
+) -> bool:
+    """
+    Args:
+        expr_pair: expr pair
+        start: domain start
+        end: domain end
+        n: # of test vals
+        tol: tolerance
+        secs: timeout secs
+    """
+    @timeout(secs=secs)
+    def _simplify(expr: Expr) -> Expr:
+        return sp.simplify(expr=expr)
+
+    @timeout(secs=secs)
+    def _equiv(
+            x: Symbol,
+            expr: Expr,
+            start: float,
+            end: float,
+            n: int,
+            tol: float,
+    ) -> bool:
+        rand_nums = np.random.uniform(low=start, high=end, size=n)
+        for num in rand_nums:
+            val = expr.subs(x, num).evalf()
+            if abs(val) > tol:
+                return False
+        return True
+
+    x = VARIABLES['x']
+
+    try:
+        src = prefix_to_sympy(expr=expr_pair[0])
+        tgt = prefix_to_sympy(expr=expr_pair[1])
+    except Exception as e:
+        logger.log_error(
+            f"prefix_to_sympy exception {e}; {expr_pair[0]} & {expr_pair[1]}"
+        )
+        return False
+    try:
+        src = _simplify(expr=src)
+        tgt = _simplify(expr=tgt)
+    except Exception as e:
+        logger.log_error(
+            f"simplify exception {e}; {expr_pair[0]} & {expr_pair[1]}"
+        )
+        return False
+
+    expr = src - tgt
+
+    if expr == 0:
+        logger.log_debug(
+            f"simplify  , equiv    ; {expr_pair[0]} & {expr_pair[1]}"
+        )
+        return True
+    else:
+        try:
+            # TODO: SIMPLIFY THIS PART AFTER MAKING SURE IT WORKS
+            res = _equiv(
+                x=x,
+                expr=expr,
+                start=start,
+                end=end,
+                n=n,
+                tol=tol,
+            )
+            logger.log_debug(
+                f"subs_evalf, equiv    ; {expr_pair[0]} & {expr_pair[1]}"
+            )
+            if res:
+                logger.log_debug(
+                    f"subs_evalf, equiv    ; {expr_pair[0]} & {expr_pair[1]}"
+                )
+            else:
+                logger.log_error(
+                    f"subs_evalf, non-equiv; {expr_pair[0]} & {expr_pair[1]}"
+                )
+            return res
+        except Exception as e:
+            logger.log_error(
+                f"_check_equiv exception {e}; {expr_pair[0]} & {expr_pair[1]}"
+            )
+            return False
+
+
+def calc_acc(src: Tensor, tgt: Tensor, tokenizer: Tokenizer) -> float:
+    corrects = 0
+    tot = src.size(dim=0)
+
+    for s, t in zip(src, tgt):
+        s = tokenizer.decode(tokens=s)
+        s = " ".join(s.split(sep=" ")[1:-1])
+        t = tokenizer.decode(tokens=t)
+        t = " ".join(t.split(sep=" ")[1:-1])
+
+        if equiv(
+            expr_pair=(s, t),
+            start=START,
+            end=END,
+            n=N,
+            tol=TOL,
+            secs=SECS,
+        ):
+            corrects += 1
+
+    return corrects / tot
 
 
 def val_epoch(
@@ -62,22 +199,32 @@ def val_epoch(
 
     with torch.no_grad():
         for i, batch in enumerate(iterable=loader_tqdm):
-            src_expr = batch["src"].to(device=device)
-            tgt_expr = batch["tgt"].to(device=device)
+            src = batch["src"].to(device=device)
+            # tgt_expr = batch["tgt"].to(device=device)
+            src_mask = batch["src_mask"].to(device=device)
 
-            pred = greedy_decode(
+            preds = greedy_decode(
                 model=model,
                 device=device,
-                src=src_expr,
-                src_mask=batch["src_mask"], # TODO: HANDLE MASK
+                src=src,
+                src_mask=src_mask,
                 seq_len=seq_len,
                 tokenizer=tokenizer,
             )
+            print(preds)
+            print(preds.size())
+            acc = calc_acc(src=src, tgt=preds, tokenizer=tokenizer)
+            acc_meter.update(val=acc, n=src.size(dim=0))
 
-            tokenizer.decode(tokens=pred)
-
-    return
+    return acc_meter.avg
 
 
-def val_model():
+def val_model(
+        model: nn.Module,
+        val_loader: DataLoader,
+        device: torch.device,
+        seq_len: int,
+        tokenizer: Tokenizer,
+):
+    # TODO: IMPLEMENT VAL/TEST OVER HERE
     return

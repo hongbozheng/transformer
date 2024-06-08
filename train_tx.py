@@ -79,6 +79,8 @@ def main() -> None:
         criterion=criterion,
         train_loader=train_loader,
         val_loader=val_loader,
+        seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
+        tokenizer=tokenizer,
     )
 
     return

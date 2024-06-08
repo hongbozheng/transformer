@@ -98,3 +98,8 @@ SYMPY_OPERATORS = {
     sp.asech: "asech",
     sp.acsch: "acsch",
 }
+
+COEFFICIENTS = OrderedDict({
+    f'a{i}': sp.Symbol(f'a{i}', real=True)
+    for i in range(10)
+})

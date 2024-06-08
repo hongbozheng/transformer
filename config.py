@@ -19,8 +19,8 @@ _C.MODEL.TX = CN()
 _C.MODEL.TX.EMB_DIM = 512
 # _C.MODEL.TX.SRC_VOCAB_SIZE = len(tokenizer.components)
 # _C.MODEL.TX.TGT_VOCAB_SIZE = len(tokenizer.components)
-_C.MODEL.TX.SRC_SEQ_LEN = 200
-_C.MODEL.TX.TGT_SEQ_LEN = 200
+_C.MODEL.TX.SRC_SEQ_LEN = 100
+_C.MODEL.TX.TGT_SEQ_LEN = 100
 _C.MODEL.TX.N_ENCODER_LAYERS = 6
 _C.MODEL.TX.N_DECODER_LAYERS = 6
 _C.MODEL.TX.N_HEADS = 8
@@ -100,6 +100,11 @@ _C.TRAIN.N_EPOCHS = 5
 _C.VAL = CN()
 
 """ Validation """
+START = 25.0
+END = 75.0
+N = 3
+TOL = 1e-10
+SECS = 10
 
 
 def get_config(args):

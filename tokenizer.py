@@ -43,7 +43,8 @@ class Tokenizer:
     def decode(self, tokens: Tensor) -> str:
         expr = []
         for token in tokens:
-            expr.append(self.idx2comp[token])
+            expr.append(self.idx2comp[token.item()])
+            if token == self.comp2idx["EOE"]:
+                break
         expr = " ".join(expr)
-
         return expr

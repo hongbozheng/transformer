@@ -6,15 +6,6 @@ from torch.utils.data import Dataset
 from tokenizer import Tokenizer
 
 
-def causal_mask(size):
-    # mask = torch.tril(torch.ones((1, size, size)), diagonal=0).type(torch.int)
-    # return mask == 0
-    mask = (torch.triu(torch.ones((size, size))) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(
-        mask == 1, float(0.0))
-    return mask
-
-
 class EquivExpr(Dataset):
     def __init__(self, filepath: str, tokenizer: Tokenizer) -> None:
         super().__init__()
