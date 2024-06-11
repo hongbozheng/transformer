@@ -17,8 +17,16 @@ def main() -> None:
 
     tokenizer = Tokenizer()
 
-    train_dataset = EquivExpr(filepath=cfg.DATA.TRAIN_FILE, tokenizer=tokenizer)
-    val_dataset = EquivExpr(filepath=cfg.DATA.VAL_FILE, tokenizer=tokenizer)
+    train_dataset = EquivExpr(
+        filepath=cfg.DATA.TRAIN_FILE,
+        tokenizer=tokenizer,
+        val=False,
+    )
+    val_dataset = EquivExpr(
+        filepath=cfg.DATA.VAL_FILE,
+        tokenizer=tokenizer,
+        val=True,
+    )
 
     train_loader = DataLoader(
         dataset=train_dataset,
