@@ -53,6 +53,7 @@ class EquivExpr(Dataset):
                 batch_first=True,
                 padding_value=self.tokenizer.comp2idx["PAD"],
             )
+            # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
             # [batch_size, n_heads, 1, seq_len]
             src_mask = torch.ne(input=src, other=self.tokenizer.comp2idx["PAD"])\
                 .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.uint8)

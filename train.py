@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 import logger
+from logger import timestamp
 import os
 import torch
 import torch.nn as nn
@@ -14,17 +15,15 @@ def train_epoch(
         model: nn.Module,
         train_loader: DataLoader,
         device: torch.device,
-        criterion: nn.CrossEntropyLoss,
         optimizer: optim.Optimizer,
+        criterion: nn.CrossEntropyLoss,
+        max_norm: float,
 ) -> float:
-    # model = Seq2SeqTransformer(num_decoder_layers=6, num_encoder_layers=6, emb_size=512, nhead=8, src_vocab_size=100, tgt_vocab_size=100, dim_feedforward=512, dropout=0.1)
-
-
     model.train(mode=True)
 
-    loader_tqdm = tqdm(iterable=train_loader, position=0, leave=True)
-    loader_tqdm.set_description(desc=f"[Batch 0]", refresh=True)
-    print(optimizer.param_groups[0]["lr"])
+    loader_tqdm = tqdm(iterable=train_loader, position=1, leave=False)
+    loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
+    # print(optimizer.param_groups[0]["lr"])
 
     loss_meter = AverageMeter()
 
@@ -37,20 +36,27 @@ def train_epoch(
         tgt_input = tgt[:, :-1]
 
         optimizer.zero_grad()
-        logits = model(src=src, tgt=tgt_input, src_mask=src_mask, tgt_mask=tgt_mask)
+        logits = model(
+            src=src,
+            tgt=tgt_input,
+            src_mask=src_mask,
+            tgt_mask=tgt_mask
+        )
         # print(logits)
         # print(logits.size())
         tgt_output = tgt[:, 1:]
-        loss = criterion(input=logits.reshape(-1, logits.size(dim=-1)), target=tgt_output.reshape(-1))
+        loss = criterion(
+            input=logits.reshape(-1, logits.size(dim=-1)),
+            target=tgt_output.reshape(-1)
+        )
         loss.backward()
-        # TODO: NOT SURE IF WE NEED TO AVOID GRADIENT EXPLODING ISSUE
-        # TODO: WITH clip_grad_norm_
-        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
         optimizer.step()
         loss_meter.update(loss.item(), n=src.size(dim=0))
 
         loader_tqdm.set_description(
-            desc=f"[Batch {i+1}]: train loss {loss_meter.avg:.6f}",
+            desc=f"[{timestamp()}] [Batch {i+1}]: "
+                 f"train loss {loss_meter.avg:.6f}",
             refresh=True,
         )
 
@@ -65,6 +71,7 @@ def train_model(
         lr_scheduler: optim.lr_scheduler.LRScheduler,
         n_epochs: int,
         criterion: nn.CrossEntropyLoss,
+        max_norm: float,
         train_loader: DataLoader,
         val_loader: DataLoader,
         seq_len: int,
@@ -94,19 +101,23 @@ def train_model(
     epoch_tqdm = tqdm(
         iterable=range(init_epoch, n_epochs),
         position=0,
-        leave=True
+        leave=True,
     )
 
     for epoch in epoch_tqdm:
-        epoch_tqdm.set_description(desc=f"[Epoch {epoch}]", refresh=True)
+        epoch_tqdm.set_description(
+            desc=f"[{timestamp()}] [Epoch {epoch}]",
+            refresh=True,
+        )
         avg_loss = train_epoch(
             model=model,
             train_loader=train_loader,
             device=device,
-            criterion=criterion,
             optimizer=optimizer,
+            criterion=criterion,
+            max_norm=max_norm,
         )
-        print(avg_loss)
+        # print(avg_loss)
         # TODO: Call val_epoch here
         avg_acc = val_epoch(
             model=model,
@@ -115,7 +126,12 @@ def train_model(
             seq_len=seq_len,
             tokenizer=tokenizer,
         )
-        print(avg_acc)
+        # print(avg_acc)
+
+        epoch_tqdm.write(
+            f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f} "
+            f"acc {avg_acc:.6f}"
+        )
 
         if avg_acc > best_acc:
             best_acc = avg_acc

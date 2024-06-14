@@ -14,6 +14,7 @@ from refactor import prefix_to_sympy
 import numpy as np
 from components import VARIABLES
 import logger
+from logger import timestamp
 
 
 def greedy_decode(
@@ -192,8 +193,8 @@ def val_epoch(
 ):
     model.eval()
 
-    loader_tqdm = tqdm(iterable=val_loader, position=1)
-    loader_tqdm.set_description(desc=f"[Batch 0]", refresh=True)
+    loader_tqdm = tqdm(iterable=val_loader, position=1, leave=False)
+    loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
 
     acc_meter = AverageMeter()
 
@@ -215,6 +216,11 @@ def val_epoch(
             # print(preds.size())
             acc = calc_acc(src=src, tgt=preds, tokenizer=tokenizer)
             acc_meter.update(val=acc, n=src.size(dim=0))
+
+            loader_tqdm.set_description(
+                desc=f"[{timestamp()}] [Batch {i+1}]: val acc {acc_meter.avg:.6f}",
+                refresh=True,
+            )
 
     return acc_meter.avg
 

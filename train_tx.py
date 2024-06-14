@@ -75,7 +75,10 @@ def main() -> None:
         last_epoch=-1,
     )
 
-    criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.comp2idx["PAD"], label_smoothing=0.1)
+    criterion = nn.CrossEntropyLoss(
+        ignore_index=tokenizer.comp2idx["PAD"],
+        label_smoothing=cfg.TRAIN.LABEL_SMOOTHING,
+    )
 
     train_model(
         model=model,
@@ -85,6 +88,7 @@ def main() -> None:
         lr_scheduler=lr_scheduler,
         n_epochs=cfg.TRAIN.N_EPOCHS,
         criterion=criterion,
+        max_norm=cfg.TRAIN.MAX_NORM,
         train_loader=train_loader,
         val_loader=val_loader,
         seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
