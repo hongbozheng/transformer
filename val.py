@@ -40,8 +40,8 @@ def greedy_decode(
                 size=(tgt.size(dim=0), 1, tgt.size(dim=1), tgt.size(dim=1))
             ),
             diagonal=0,
-        ).to(dtype=torch.uint8)
-        print(tgt_mask, tgt_mask.size())
+        ).to(dtype=torch.uint8).to(device=device)
+        #print(tgt_mask, tgt_mask.size())
         logits = model.decode(
             x=tgt,
             memory=memory,
@@ -49,17 +49,17 @@ def greedy_decode(
             mem_mask=src_mask,
         )
         logits = model.proj(x=logits[:, -1])
-        print("after proj")
-        print(logits, logits.size())
+        #print("after proj")
+        #print(logits, logits.size())
         _, nxt_words = torch.max(input=logits, dim=1, keepdim=True)
-        print("nxt words")
-        print(nxt_words, nxt_words.size())
+        #print("nxt words")
+        #print(nxt_words, nxt_words.size())
         tgt = torch.cat(tensors=[tgt, nxt_words], dim=1)
-        print("tgt")
-        print(tgt, tgt.size())
+        #print("tgt")
+        #print(tgt, tgt.size())
 
         done |= (nxt_words == tokenizer.comp2idx["EOE"])
-        print("done", done)
+        #print("done", done)
 
         if done.all():
             break
@@ -211,8 +211,8 @@ def val_epoch(
                 seq_len=seq_len,
                 tokenizer=tokenizer,
             )
-            print(preds)
-            print(preds.size())
+            # print(preds)
+            # print(preds.size())
             acc = calc_acc(src=src, tgt=preds, tokenizer=tokenizer)
             acc_meter.update(val=acc, n=src.size(dim=0))
 

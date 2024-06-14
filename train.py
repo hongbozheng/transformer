@@ -24,6 +24,7 @@ def train_epoch(
 
     loader_tqdm = tqdm(iterable=train_loader, position=0, leave=True)
     loader_tqdm.set_description(desc=f"[Batch 0]", refresh=True)
+    print(optimizer.param_groups[0]["lr"])
 
     loss_meter = AverageMeter()
 
@@ -37,13 +38,14 @@ def train_epoch(
 
         optimizer.zero_grad()
         logits = model(src=src, tgt=tgt_input, src_mask=src_mask, tgt_mask=tgt_mask)
-        print(logits)
-        print(logits.size())
+        # print(logits)
+        # print(logits.size())
         tgt_output = tgt[:, 1:]
         loss = criterion(input=logits.reshape(-1, logits.size(dim=-1)), target=tgt_output.reshape(-1))
         loss.backward()
         # TODO: NOT SURE IF WE NEED TO AVOID GRADIENT EXPLODING ISSUE
         # TODO: WITH clip_grad_norm_
+        nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         loss_meter.update(loss.item(), n=src.size(dim=0))
 
@@ -80,7 +82,7 @@ def train_model(
 
     if os.path.exists(path=ckpt_filepath):
         ckpt = torch.load(f=ckpt_filepath, map_location=device)
-        model.loadstate_dict(state_dict=ckpt["model"])
+        model.load_state_dict(state_dict=ckpt["model"])
         optimizer.load_state_dict(ckpt["optimizer"])
         lr_scheduler.load_state_dict(ckpt["lr_scheduler"])
 

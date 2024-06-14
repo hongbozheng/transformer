@@ -7,7 +7,7 @@ from dataset import EquivExpr
 from torch.utils.data import DataLoader
 from transformer import Transformer
 from train import train_model
-from torch.optim import AdamW
+from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.nn as nn
 
@@ -62,7 +62,7 @@ def main() -> None:
         dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
     )
 
-    optimizer = AdamW(
+    optimizer = Adam(
         params=model.parameters(),
         lr=cfg.MODEL.TX.LR,
         weight_decay=cfg.MODEL.TX.WEIGHT_DECAY,
@@ -75,7 +75,7 @@ def main() -> None:
         last_epoch=-1,
     )
 
-    criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.comp2idx["PAD"])
+    criterion = nn.CrossEntropyLoss(ignore_index=tokenizer.comp2idx["PAD"], label_smoothing=0.1)
 
     train_model(
         model=model,

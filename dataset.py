@@ -67,6 +67,7 @@ class EquivExpr(Dataset):
                 other=self.tokenizer.comp2idx["PAD"]
             ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.uint8)
             tgt_mask &= tgt_pad_mask
+            '''
             print(tgt)
             print(src)
             print("src_mask")
@@ -76,6 +77,7 @@ class EquivExpr(Dataset):
             print("tgt_pad_mask")
             print(tgt_pad_mask, tgt_pad_mask.size())
             print(tgt_mask, tgt_mask.size())
+            '''
             return {
                 "src": src,
                 "tgt": tgt,

@@ -229,8 +229,8 @@ class MultiHeadAttention(nn.Module):
             # TODO: COULD POSSIBLY EXPAND OVER HERE
             attn_scores.masked_fill_(mask=mask == 0, value=float('-inf'))
         attn_scores = attn_scores.softmax(dim=-1)
-        print(attn_scores)
-        print(attn_scores.size())
+        #print(attn_scores)
+        #print(attn_scores.size())
         if dropout is not None:
             attn_scores = dropout(attn_scores)
         # [batch, n_heads, seq_len, head_dim]
