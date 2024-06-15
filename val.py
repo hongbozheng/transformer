@@ -34,7 +34,11 @@ def greedy_decode(
         device=device,
     )
     # [batch_size, 1]
-    done = torch.zeros(size=(src.size(dim=0), 1), dtype=torch.bool, device=device)
+    done = torch.zeros(
+        size=(src.size(dim=0), 1),
+        dtype=torch.bool,
+        device=device
+    )
     for i in range(seq_len-1):
         tgt_mask = torch.tril(
             input=torch.ones(
@@ -218,7 +222,8 @@ def val_epoch(
             acc_meter.update(val=acc, n=src.size(dim=0))
 
             loader_tqdm.set_description(
-                desc=f"[{timestamp()}] [Batch {i+1}]: val acc {acc_meter.avg:.6f}",
+                desc=f"[{timestamp()}] [Batch {i+1}]: "
+                     f"val acc {acc_meter.avg:.6f}",
                 refresh=True,
             )
 

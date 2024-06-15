@@ -85,14 +85,13 @@ def train_model(
 
     init_epoch = 0
     best_acc = 0.0
-    avg_losses = []
+    avg_losses = []  # TODO: Store train losses & val acc in JSON?
 
     if os.path.exists(path=ckpt_filepath):
         ckpt = torch.load(f=ckpt_filepath, map_location=device)
         model.load_state_dict(state_dict=ckpt["model"])
-        optimizer.load_state_dict(ckpt["optimizer"])
-        lr_scheduler.load_state_dict(ckpt["lr_scheduler"])
-
+        optimizer.load_state_dict(state_dict=ckpt["optimizer"])
+        lr_scheduler.load_state_dict(state_dict=ckpt["lr_scheduler"])
         init_epoch = ckpt["epoch"]+1
         best_acc = ckpt["best_acc"]
         filename = os.path.basename(p=ckpt_filepath)
@@ -100,6 +99,7 @@ def train_model(
 
     epoch_tqdm = tqdm(
         iterable=range(init_epoch, n_epochs),
+        desc=f"[{timestamp()}] [Epoch {init_epoch}]",
         position=0,
         leave=True,
     )
@@ -117,8 +117,6 @@ def train_model(
             criterion=criterion,
             max_norm=max_norm,
         )
-        # print(avg_loss)
-        # TODO: Call val_epoch here
         avg_acc = val_epoch(
             model=model,
             val_loader=val_loader,
@@ -126,11 +124,11 @@ def train_model(
             seq_len=seq_len,
             tokenizer=tokenizer,
         )
-        # print(avg_acc)
+        lr_scheduler.step()
 
         epoch_tqdm.write(
-            f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f} "
-            f"acc {avg_acc:.6f}"
+            s=f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f} "
+              f"acc {avg_acc:.6f}"
         )
 
         if avg_acc > best_acc:
@@ -144,6 +142,10 @@ def train_model(
                     "best_acc": best_acc,
                 },
                 f=ckpt_filepath,
+            )
+            epoch_tqdm.write(
+                s=f"[{timestamp()}] [Epoch {epoch}]: Saved best model to "
+                  f"'{ckpt_filepath}'"
             )
 
     return
