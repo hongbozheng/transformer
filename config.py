@@ -51,6 +51,7 @@ _C.DATA = CN()
 _C.DATA.DATA_DIR = "data"
 _C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_pairs_copy.txt"
 _C.DATA.VAL_FILE = _C.DATA.DATA_DIR + "/exprs_val.txt"
+_C.DATA.TEST_FILE = _C.DATA.DATA_DIR + "/exprs_test.txt"
 
 
 # -----------------------------------------------------------------------------
@@ -71,6 +72,13 @@ _C.LOADER.VAL.BATCH_SIZE = 128
 _C.LOADER.VAL.SHUFFLE = False
 _C.LOADER.VAL.NUM_WORKERS = 1
 _C.LOADER.VAL.PIN_MEMORY = True
+
+""" Test DataLoader """
+_C.LOADER.TEST = CN()
+_C.LOADER.TEST.BATCH_SIZE = 5
+_C.LOADER.TEST.SHUFFLE = False
+_C.LOADER.TEST.NUM_WORKERS = 1
+_C.LOADER.TEST.PIN_MEMORY = True
 
 
 # -----------------------------------------------------------------------------

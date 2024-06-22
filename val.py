@@ -1,6 +1,6 @@
 from typing import Tuple
-from config import START, END, N, TOL, SECS
 from torch import Tensor
+from config import START, END, N, TOL, SECS
 from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
@@ -25,24 +25,28 @@ def greedy_decode(
         seq_len: int,
         tokenizer: Tokenizer,
 ) -> Tensor:
+    batch_size = src.size(dim=0)
+
     memory = model.encode(x=src, mask=src_mask)
+
     # [batch_size, 1] of "SOE"
     tgt = torch.full(
-        size=(src.size(dim=0), 1),
+        size=(batch_size, 1),
         fill_value=tokenizer.comp2idx["SOE"],
         dtype=torch.int64,
         device=device,
     )
     # [batch_size, 1]
     done = torch.zeros(
-        size=(src.size(dim=0), 1),
+        size=(batch_size, 1),
         dtype=torch.bool,
         device=device
     )
+
     for i in range(seq_len-1):
         tgt_mask = torch.tril(
             input=torch.ones(
-                size=(tgt.size(dim=0), 1, tgt.size(dim=1), tgt.size(dim=1))
+                size=(batch_size, 1, tgt.size(dim=1), tgt.size(dim=1))
             ),
             diagonal=0,
         ).to(dtype=torch.uint8).to(device=device)
@@ -228,14 +232,3 @@ def val_epoch(
             )
 
     return acc_meter.avg
-
-
-def val_model(
-        model: nn.Module,
-        val_loader: DataLoader,
-        device: torch.device,
-        seq_len: int,
-        tokenizer: Tokenizer,
-):
-    # TODO: IMPLEMENT VAL/TEST OVER HERE
-    return
