@@ -226,7 +226,6 @@ class MultiHeadAttention(nn.Module):
         # [batch, n_heads, seq_len, seq_len]
         attn_scores = (q @ k.transpose(dim0=-2, dim1=-1)) / math.sqrt(head_dim)
         if mask is not None:
-            # TODO: COULD POSSIBLY EXPAND OVER HERE
             attn_scores.masked_fill_(mask=mask == 0, value=float('-inf'))
         attn_scores = attn_scores.softmax(dim=-1)
         #print(attn_scores)
