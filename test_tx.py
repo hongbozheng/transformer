@@ -44,8 +44,9 @@ def main() -> None:
 
     test_model(
         model=model,
-        test_loader=test_loader,
+        ckpt_filepath=cfg.BEST_MODEL.TX,
         device=DEVICE,
+        test_loader=test_loader,
         seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
         tokenizer=tokenizer,
     )

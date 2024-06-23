@@ -29,7 +29,7 @@ def greedy_decode(
 
     memory = model.encode(x=src, mask=src_mask)
 
-    # [batch_size, 1] of "SOE"
+    # [batch, 1] of "SOE"
     tgt = torch.full(
         size=(batch_size, 1),
         fill_value=tokenizer.comp2idx["SOE"],
@@ -60,14 +60,14 @@ def greedy_decode(
         logits = model.proj(x=logits[:, -1])
         #print("after proj")
         #print(logits, logits.size())
-        _, nxt_words = torch.max(input=logits, dim=1, keepdim=True)
+        _, nxt_tokens = torch.max(input=logits, dim=1, keepdim=True)
         #print("nxt words")
         #print(nxt_words, nxt_words.size())
-        tgt = torch.cat(tensors=[tgt, nxt_words], dim=1)
+        tgt = torch.cat(tensors=[tgt, nxt_tokens], dim=1)
         #print("tgt")
         #print(tgt, tgt.size())
 
-        done |= (nxt_words == tokenizer.comp2idx["EOE"])
+        done |= (nxt_tokens == tokenizer.comp2idx["EOE"])
         #print("done", done)
 
         if done.all():
@@ -194,8 +194,8 @@ def calc_acc(src: Tensor, tgt: Tensor, tokenizer: Tokenizer) -> float:
 
 def val_epoch(
         model: nn.Module,
-        val_loader: DataLoader,
         device: torch.device,
+        val_loader: DataLoader,
         seq_len: int,
         tokenizer: Tokenizer,
 ):

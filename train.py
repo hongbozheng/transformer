@@ -77,11 +77,12 @@ def train_model(
         seq_len: int,
         tokenizer: Tokenizer,
 ):
+    model.to(device=device)
+    model.train(mode=True)
+
     path, _ = os.path.split(p=ckpt_filepath)
     if not os.path.exists(path=path):
         os.makedirs(name=path, exist_ok=True)
-
-    model.to(device=device)
 
     init_epoch = 0
     best_acc = 0.0
