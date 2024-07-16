@@ -3,13 +3,13 @@
 
 from config import get_config, DEVICE
 from tokenizer import Tokenizer
-from dataset import EquivExpr
+from dataset import CL
 from torch.utils.data import DataLoader
 from transformer import Transformer
 from train import train_model
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-import torch.nn as nn
+from contrastive_loss import ContrastiveLoss
 
 
 def main() -> None:
@@ -17,37 +17,39 @@ def main() -> None:
 
     tokenizer = Tokenizer()
 
-    train_dataset = EquivExpr(
+    cl_dataset = CL(
         filepath=cfg.DATA.TRAIN_FILE,
         tokenizer=tokenizer,
         val=False,
     )
-    val_dataset = EquivExpr(
-        filepath=cfg.DATA.VAL_FILE,
-        tokenizer=tokenizer,
-        val=True,
-    )
+    # val_dataset = EquivExpr(
+    #     filepath=cfg.DATA.VAL_FILE,
+    #     tokenizer=tokenizer,
+    #     val=True,
+    # )
 
     train_loader = DataLoader(
-        dataset=train_dataset,
+        dataset=cl_dataset,
         batch_size=cfg.LOADER.TRAIN.BATCH_SIZE,
         shuffle=cfg.LOADER.TRAIN.SHUFFLE,
         num_workers=cfg.LOADER.TRAIN.NUM_WORKERS,
-        collate_fn=train_dataset.collate_fn,
+        collate_fn=cl_dataset.collate_fn,
         pin_memory=cfg.LOADER.TRAIN.PIN_MEMORY,
     )
     # for batch in train_loader:
     #     print(batch["src"], batch["src"].shape)
-    #     print(batch["tgt"], batch["tgt"].shape)
+    #     print(batch["src_mask"], batch["src_mask"].shape)
+    #     # print(batch["tgt"], batch["tgt"].shape)
     #     break
-    val_loader = DataLoader(
-        dataset=val_dataset,
-        batch_size=cfg.LOADER.VAL.BATCH_SIZE,
-        shuffle=cfg.LOADER.VAL.SHUFFLE,
-        num_workers=cfg.LOADER.VAL.NUM_WORKERS,
-        collate_fn=val_dataset.collate_fn,
-        pin_memory=cfg.LOADER.VAL.PIN_MEMORY,
-    )
+    # exit()
+    # val_loader = DataLoader(
+    #     dataset=val_dataset,
+    #     batch_size=cfg.LOADER.VAL.BATCH_SIZE,
+    #     shuffle=cfg.LOADER.VAL.SHUFFLE,
+    #     num_workers=cfg.LOADER.VAL.NUM_WORKERS,
+    #     collate_fn=val_dataset.collate_fn,
+    #     pin_memory=cfg.LOADER.VAL.PIN_MEMORY,
+    # )
 
     model = Transformer(
         emb_dim=cfg.MODEL.TX.EMB_DIM,
@@ -75,9 +77,8 @@ def main() -> None:
         last_epoch=-1,
     )
 
-    criterion = nn.CrossEntropyLoss(
-        ignore_index=tokenizer.comp2idx["PAD"],
-        label_smoothing=cfg.TRAIN.LABEL_SMOOTHING,
+    criterion = ContrastiveLoss(
+        tau=0.07,
     )
 
     train_model(
@@ -90,7 +91,7 @@ def main() -> None:
         criterion=criterion,
         max_norm=cfg.TRAIN.MAX_NORM,
         train_loader=train_loader,
-        val_loader=val_loader,
+        val_loader=None,
         seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
         tokenizer=tokenizer,
     )

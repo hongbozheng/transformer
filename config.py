@@ -19,8 +19,8 @@ _C.MODEL.TX = CN()
 _C.MODEL.TX.EMB_DIM = 512
 # _C.MODEL.TX.SRC_VOCAB_SIZE = len(tokenizer.components)
 # _C.MODEL.TX.TGT_VOCAB_SIZE = len(tokenizer.components)
-_C.MODEL.TX.SRC_SEQ_LEN = 200
-_C.MODEL.TX.TGT_SEQ_LEN = 200
+_C.MODEL.TX.SRC_SEQ_LEN = 512
+_C.MODEL.TX.TGT_SEQ_LEN = 256
 _C.MODEL.TX.N_ENCODER_LAYERS = 6
 _C.MODEL.TX.N_DECODER_LAYERS = 6
 _C.MODEL.TX.N_HEADS = 8
@@ -49,9 +49,7 @@ _C.DATA = CN()
 
 """ EquivExpr """
 _C.DATA.DATA_DIR = "data"
-_C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_pairs.txt"
-_C.DATA.VAL_FILE = _C.DATA.DATA_DIR + "/exprs_val.txt"
-_C.DATA.TEST_FILE = _C.DATA.DATA_DIR + "/exprs_test.txt"
+_C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_triple_train.txt"
 
 
 # -----------------------------------------------------------------------------
@@ -61,24 +59,17 @@ _C.LOADER = CN()
 
 """ Train DataLoader """
 _C.LOADER.TRAIN = CN()
-_C.LOADER.TRAIN.BATCH_SIZE = 128
+_C.LOADER.TRAIN.BATCH_SIZE = 256
 _C.LOADER.TRAIN.SHUFFLE = False
 _C.LOADER.TRAIN.NUM_WORKERS = 1
 _C.LOADER.TRAIN.PIN_MEMORY = True
 
 """ Val DataLoader """
 _C.LOADER.VAL = CN()
-_C.LOADER.VAL.BATCH_SIZE = 128
+_C.LOADER.VAL.BATCH_SIZE = 512
 _C.LOADER.VAL.SHUFFLE = False
 _C.LOADER.VAL.NUM_WORKERS = 1
 _C.LOADER.VAL.PIN_MEMORY = True
-
-""" Test DataLoader """
-_C.LOADER.TEST = CN()
-_C.LOADER.TEST.BATCH_SIZE = 5
-_C.LOADER.TEST.SHUFFLE = False
-_C.LOADER.TEST.NUM_WORKERS = 1
-_C.LOADER.TEST.PIN_MEMORY = True
 
 
 # -----------------------------------------------------------------------------
@@ -105,16 +96,14 @@ _C.TRAIN.MAX_NORM = 1.0
 
 
 # -----------------------------------------------------------------------------
-# Validation
+# KMeans
 # -----------------------------------------------------------------------------
-_C.VAL = CN()
+_C.KMEANS = CN()
 
-""" Validation """
-START = 25.0
-END = 75.0
-N = 3
-TOL = 1e-10
-SECS = 10
+""" KMeans """
+_C.KMEANS.MAX_ITER = 1000
+_C.KMEANS.TOL = 1e-6
+_C.KMEANS.RANDOM_STATE = SEED
 
 
 def get_config(args):

@@ -29,26 +29,26 @@ def train_epoch(
 
     for i, batch in enumerate(iterable=loader_tqdm):
         src = batch["src"].to(device=device)
-        tgt = batch["tgt"].to(device=device)
         src_mask = batch["src_mask"].to(device=device)
-        tgt_mask = batch["tgt_mask"].to(device=device)
-
-        tgt_input = tgt[:, :-1]
 
         optimizer.zero_grad()
-        logits = model(
-            src=src,
-            tgt=tgt_input,
-            src_mask=src_mask,
-            tgt_mask=tgt_mask
-        )
-        # print(logits)
-        # print(logits.size())
-        tgt_output = tgt[:, 1:]
-        loss = criterion(
-            input=logits.reshape(-1, logits.size(dim=-1)),
-            target=tgt_output.reshape(-1)
-        )
+        embs = model(src=src, src_mask=src_mask)
+        # print(embs)
+        # print(embs.size())
+        src_mask = src_mask.squeeze(dim=1).squeeze(dim=1)
+        # print(src_mask)
+        # print(src_mask.size())
+        embs[src_mask==0] = float("-inf")
+        # print(embs)
+        # print(embs.size())
+        embs, _ = embs.max(dim=1, keepdim=False)
+        # print(embs)
+        # print(embs.size())
+
+        embs = embs.reshape(3, -1, embs.size(dim=-1))
+
+        loss = criterion(e=embs[0], e_pos=embs[1], e_neg=embs[2])
+        # print(loss)
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
         optimizer.step()
@@ -85,7 +85,7 @@ def train_model(
         os.makedirs(name=path, exist_ok=True)
 
     init_epoch = 0
-    best_acc = 0.0
+    best_loss = float('inf')
     avg_losses = []  # TODO: Store train losses & val acc in JSON?
 
     if os.path.exists(path=ckpt_filepath):
@@ -118,29 +118,29 @@ def train_model(
             criterion=criterion,
             max_norm=max_norm,
         )
-        avg_acc = val_epoch(
-            model=model,
-            val_loader=val_loader,
-            device=device,
-            seq_len=seq_len,
-            tokenizer=tokenizer,
-        )
+        # avg_acc = val_epoch(
+        #     model=model,
+        #     val_loader=val_loader,
+        #     device=device,
+        #     seq_len=seq_len,
+        #     tokenizer=tokenizer,
+        # )
         lr_scheduler.step()
 
         epoch_tqdm.write(
             s=f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f} "
-              f"acc {avg_acc:.6f}"
+              # f"acc {avg_acc:.6f}"
         )
 
-        if avg_acc > best_acc:
-            best_acc = avg_acc
+        if avg_loss < best_loss:
+            best_loss = avg_loss
             torch.save(
                 obj={
                     "model": model.state_dict(),
                     "optimizer": optimizer.state_dict(),
                     "lr_scheduler": lr_scheduler.state_dict(),
                     "epoch": epoch,
-                    "best_acc": best_acc,
+                    "best_loss": best_loss,
                 },
                 f=ckpt_filepath,
             )
