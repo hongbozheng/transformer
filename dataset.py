@@ -119,7 +119,7 @@ class CL_KMeans(Dataset):
         size = 0
 
         file = open(file=filepath, mode='r', encoding='utf-8')
-        for i, line in enumerate(file):
+        for line in file:
             expr = line.strip()
             if expr:
                 self.exprs.append(expr)
