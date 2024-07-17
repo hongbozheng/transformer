@@ -32,7 +32,7 @@ def embedding(
     for i, batch in enumerate(loader_tqdm):
         src = batch["src"].to(device=device)
         src_mask = batch["src_mask"].to(device=device)
-        emb = model(src=src, src_mask=src_mask)
+        emb = model.encode(x=src, mask=src_mask)
         emb, _ = emb.max(dim=1, keepdim=False)
         embs.append(emb)
         loader_tqdm.set_description(
