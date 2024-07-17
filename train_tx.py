@@ -20,13 +20,7 @@ def main() -> None:
     cl_dataset = CL(
         filepath=cfg.DATA.TRAIN_FILE,
         tokenizer=tokenizer,
-        val=False,
     )
-    # val_dataset = EquivExpr(
-    #     filepath=cfg.DATA.VAL_FILE,
-    #     tokenizer=tokenizer,
-    #     val=True,
-    # )
 
     train_loader = DataLoader(
         dataset=cl_dataset,
@@ -78,7 +72,7 @@ def main() -> None:
     )
 
     criterion = ContrastiveLoss(
-        tau=0.07,
+        tau=cfg.TRAIN.TAU,
     )
 
     train_model(
@@ -91,9 +85,6 @@ def main() -> None:
         criterion=criterion,
         max_norm=cfg.TRAIN.MAX_NORM,
         train_loader=train_loader,
-        val_loader=None,
-        seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
-        tokenizer=tokenizer,
     )
 
     return

@@ -615,13 +615,19 @@ class Transformer(nn.Module):
         x = self.proj(x)
         return x
 
-    def forward(self, src: Tensor, src_mask: Tensor) -> Tensor:
+def forward(
+            self,
+            src: Tensor,
+            tgt: Tensor,
+            src_mask: Tensor,
+            tgt_mask: Tensor,
+    ) -> Tensor:
         memory = self.encode(x=src, mask=src_mask)
-        # x = self.decode(
-        #     x=tgt,
-        #     memory=memory,
-        #     tgt_mask=tgt_mask,
-        #     mem_mask=src_mask,
-        # )
-        # x = self.project(x=x)
-        return memory
+        x = self.decode(
+            x=tgt,
+            memory=memory,
+            tgt_mask=tgt_mask,
+            mem_mask=src_mask,
+        )
+        x = self.project(x=x)
+        return x

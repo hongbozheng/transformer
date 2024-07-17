@@ -8,7 +8,6 @@ import torch.optim as optim
 from avg_meter import AverageMeter
 from tqdm import tqdm
 from tokenizer import Tokenizer
-from val import val_epoch
 
 
 def train_epoch(
@@ -32,7 +31,8 @@ def train_epoch(
         src_mask = batch["src_mask"].to(device=device)
 
         optimizer.zero_grad()
-        embs = model(src=src, src_mask=src_mask)
+        embs = model.encode(x=src, mask=src_mask)
+        # embs = model(src=src, src_mask=src_mask)
         # print(embs)
         # print(embs.size())
         src_mask = src_mask.squeeze(dim=1).squeeze(dim=1)
@@ -73,9 +73,6 @@ def train_model(
         criterion: nn.CrossEntropyLoss,
         max_norm: float,
         train_loader: DataLoader,
-        val_loader: DataLoader,
-        seq_len: int,
-        tokenizer: Tokenizer,
 ):
     model.to(device=device)
     model.train(mode=True)
@@ -94,7 +91,7 @@ def train_model(
         optimizer.load_state_dict(state_dict=ckpt["optimizer"])
         lr_scheduler.load_state_dict(state_dict=ckpt["lr_scheduler"])
         init_epoch = ckpt["epoch"]+1
-        best_acc = ckpt["best_acc"]
+        best_loss = ckpt["best_loss"]
         filename = os.path.basename(p=ckpt_filepath)
         logger.log_info(f"Loaded '{filename}'")
 
@@ -118,18 +115,11 @@ def train_model(
             criterion=criterion,
             max_norm=max_norm,
         )
-        # avg_acc = val_epoch(
-        #     model=model,
-        #     val_loader=val_loader,
-        #     device=device,
-        #     seq_len=seq_len,
-        #     tokenizer=tokenizer,
-        # )
+
         lr_scheduler.step()
 
         epoch_tqdm.write(
-            s=f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f} "
-              # f"acc {avg_acc:.6f}"
+            s=f"[{timestamp()}] [Epoch {epoch}]: loss {avg_loss:.6f}"
         )
 
         if avg_loss < best_loss:

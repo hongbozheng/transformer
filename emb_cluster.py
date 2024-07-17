@@ -4,15 +4,15 @@
 import argparse
 from config import get_config, DEVICE
 import logger
-from logger import timestamp
 import torch
 import torch.nn as nn
 from dataset import CL_KMeans
-from torch.utils.data import DataLoader
+from logger import timestamp
+from sklearn.cluster import KMeans
 from tokenizer import Tokenizer
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformer import Transformer
-from sklearn.cluster import KMeans
 
 
 def embedding(
