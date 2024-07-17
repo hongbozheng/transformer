@@ -91,7 +91,8 @@ _C.TRAIN = CN()
 
 """ Training """
 _C.TRAIN.N_EPOCHS = 25
-_C.TRAIN.TAU = 0.1
+_C.TRAIN.TEMPERATURE = 0.1
+_C.TRAIN.REDUCTION = "mean"
 _C.TRAIN.MAX_NORM = 1.0
 
 

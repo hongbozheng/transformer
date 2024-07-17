@@ -9,7 +9,7 @@ from transformer import Transformer
 from train import train_model
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from contrastive_loss import ContrastiveLoss
+from criterion import InfoNCE
 
 
 def main() -> None:
@@ -71,8 +71,9 @@ def main() -> None:
         last_epoch=-1,
     )
 
-    criterion = ContrastiveLoss(
-        tau=cfg.TRAIN.TAU,
+    criterion = InfoNCE(
+        temperature=cfg.TRAIN.TEMPERATURE,
+        reduction=cfg.TRAIN.REDUCTION,
     )
 
     train_model(
