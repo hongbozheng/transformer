@@ -4,13 +4,15 @@
 import argparse
 from config import get_config, DEVICE
 import logger
+import numpy as np
 import torch
 import torch.nn as nn
+from collections import Counter
 from dataset import CL_KMeans
 from logger import timestamp
 from sklearn.cluster import KMeans
 from tokenizer import Tokenizer
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformer import Transformer
 
@@ -43,6 +45,38 @@ def embedding(
     logger.log_info("Finish generating expression embeddings")
 
     return embs
+
+
+def calculate_acc(rest_labels:list, n_clusters:int, dataset: Dataset) -> None:
+    len_cluster = dataset.sizes
+    all_labels = {i for i in range(n_clusters)}
+    used_labels = []
+    accs = []
+    hard_clusters = []
+
+    for i in range(n_clusters):
+        labels = rest_labels[:len_cluster[i]]
+        if i < n_clusters:
+            rest_labels = rest_labels[len_cluster[i]:]
+        j = 1
+        while j <= n_clusters:
+            if j <= len(Counter(labels).most_common(j)):
+                most_label = Counter(labels).most_common(j)[j-1][0]
+                if most_label not in used_labels:
+                    used_labels.append(most_label)
+                    accs.append(labels.count(most_label)/len(labels))
+                    break
+                else:
+                    j += 1
+            else:
+                hard_clusters.append(labels)
+                break
+    hard_labels = list(all_labels - set(used_labels))
+    for i in range(len(hard_clusters)):
+        most_label = hard_labels[i]
+        labels = hard_clusters[i]
+        accs.append(labels.count(most_label)/len(labels))
+    print(np.mean(accs))
 
 
 def main() -> None:
@@ -108,6 +142,12 @@ def main() -> None:
     kmeans.predict(X=embs)
 
     print(kmeans.labels_)
+
+    calculate_acc(
+        rest_labels=list(kmeans.labels_),
+        n_clusters=cl_dataset.n_clusters,
+        dataset=cl_dataset,
+    )
 
     return
 
