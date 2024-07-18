@@ -90,7 +90,7 @@ LOG_LEVEL = LogLevel.INFO
 _C.TRAIN = CN()
 
 """ Training """
-_C.TRAIN.N_EPOCHS = 25
+_C.TRAIN.N_EPOCHS = 35
 _C.TRAIN.TEMPERATURE = 0.1
 _C.TRAIN.REDUCTION = "mean"
 _C.TRAIN.MAX_NORM = 1.0
@@ -105,6 +105,15 @@ _C.KMEANS = CN()
 _C.KMEANS.MAX_ITER = 1000
 _C.KMEANS.TOL = 1e-6
 _C.KMEANS.RANDOM_STATE = SEED
+
+
+# -----------------------------------------------------------------------------
+# UMAP & t-SNE
+# -----------------------------------------------------------------------------
+_C.DIM_RED = CN()
+
+""" UMAP & t-SNE """
+_C.DIM_RED.PERPLEXITY = 30
 
 
 def get_config(args):

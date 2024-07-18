@@ -63,19 +63,23 @@ class CL_KMeans(Dataset):
     def __init__(self, filepath: str, tokenizer: Tokenizer) -> None:
         super().__init__()
         self.exprs = []
+        self.gt = []
         self.n_clusters = 0
         self.sizes = []
         self.tokenizer = tokenizer
 
+        cls = 0
         size = 0
 
         file = open(file=filepath, mode='r', encoding='utf-8')
         for line in file:
             expr = line.strip()
             if expr:
+                self.gt.append(cls)
                 self.exprs.append(expr)
                 size += 1
             else:
+                cls += 1
                 self.n_clusters += 1
                 self.sizes.append(size)
                 size = 0

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 
 
+from torch import Tensor
+from typing import List
 import argparse
-from config import get_config, DEVICE
+from config import get_config, DEVICE, SEED
 import logger
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,10 +14,12 @@ from collections import Counter
 from dataset import CL_KMeans
 from logger import timestamp
 from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 from transformer import Transformer
+from umap import UMAP
 
 
 def embedding(
@@ -47,7 +52,7 @@ def embedding(
     return embs
 
 
-def calculate_acc(rest_labels:list, n_clusters:int, dataset: Dataset) -> None:
+def calculate_acc(rest_labels: list, n_clusters: int, dataset: Dataset) -> None:
     len_cluster = dataset.sizes
     all_labels = {i for i in range(n_clusters)}
     used_labels = []
@@ -79,6 +84,42 @@ def calculate_acc(rest_labels:list, n_clusters:int, dataset: Dataset) -> None:
     print(np.mean(accs))
 
 
+def emb_plt(method: str, embs: Tensor, perplexity: int, gt: List[int]) -> None:
+    if method == "UMAP":
+        reducer = UMAP(n_neighbors=perplexity, n_components=2, transform_seed=SEED)
+        reducer.fit(X=embs)
+        embs = reducer.transform(X=embs)
+    elif method == "t-SNE":
+        tsne = TSNE(n_components=2, perplexity=perplexity, random_state=SEED)
+        embs = tsne.fit_transform(X=embs)
+    scatter = plt.scatter(x=embs[:, 0], y=embs[:, 1], c=gt, cmap="Spectral", s=5)
+    plt.rc(group="font", family="serif")
+    plt.rc(group="text", usetex=False)
+    plt.title(rf"{method} Embeddings")
+    plt.xlabel(rf"{method} Dimension 1")
+    plt.ylabel(rf"{method} Dimension 2")
+    legend = plt.legend(
+        *scatter.legend_elements(),
+        loc=0,
+        ncols=1,
+        fontsize='xx-small',
+        markerscale=0.5,
+        framealpha=0.5,
+        title="Classes",
+        title_fontsize='xx-small',
+        borderpad=0.1,
+        labelspacing=0.1,
+    )
+    plt.gca().add_artist(legend)
+    legend.get_frame().set_edgecolor(color='black')
+    legend.get_frame().set_linewidth(w=0.5)
+    legend.get_frame().set_alpha(alpha=0.5)
+
+    plt.savefig(f"{method}.png", dpi=1000)
+
+    return
+
+
 def main() -> None:
     cfg = get_config(args=None)
 
@@ -92,11 +133,20 @@ def main() -> None:
         "-f",
         type=str,
         required=True,
-        help="expressions filepath"
+        help="expressions filepath",
+    )
+    parser.add_argument(
+        "--method",
+        "-m",
+        type=str,
+        required=True,
+        choices=["UMAP", "t-SNE"],
+        help="dimension reduction method",
     )
 
     args = parser.parse_args()
     filepath = args.filepath
+    method = args.method
 
     tokenizer = Tokenizer()
 
@@ -147,6 +197,13 @@ def main() -> None:
         rest_labels=list(kmeans.labels_),
         n_clusters=cl_dataset.n_clusters,
         dataset=cl_dataset,
+    )
+
+    emb_plt(
+        method=method,
+        embs=embs,
+        perplexity=cfg.DIM_RED.PERPLEXITY,
+        gt=cl_dataset.gt,
     )
 
     return
