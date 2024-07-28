@@ -1,5 +1,6 @@
-import torch
 from torch import Tensor
+
+import torch
 from components import CONSTANTS, SPECIAL_WORDS, SYMBOLS, VARIABLES, \
     OPERATORS, SYMPY_OPERATORS
 

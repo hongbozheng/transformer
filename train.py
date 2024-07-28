@@ -1,13 +1,12 @@
-from torch.utils.data import DataLoader
 import logger
-from logger import timestamp
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from avg_meter import AverageMeter
+from logger import timestamp
+from torch.utils.data import DataLoader
 from tqdm import tqdm
-from tokenizer import Tokenizer
 
 
 def train_epoch(

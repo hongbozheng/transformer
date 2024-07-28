@@ -2,14 +2,14 @@
 
 
 from config import get_config, DEVICE
-from tokenizer import Tokenizer
+from criterion import InfoNCE
 from dataset import CL
+from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
-from transformer import Transformer
-from train import train_model
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-from criterion import InfoNCE
+from train import train_model
+from transformer import Transformer
 
 
 def main() -> None:
