@@ -1,4 +1,3 @@
-from typing import Optional
 import config
 import enum
 from datetime import datetime
@@ -38,18 +37,6 @@ class LogLevel(enum.Enum):
 def timestamp() -> str:
     time = datetime.now().strftime(format="%Y-%m-%d %H:%M:%S")
     return time
-
-
-def log_msg(level: Optional[str], *args, **kwargs) -> None:
-    ts = timestamp()
-    if level:
-        print(f"[{ts}] [{level}]: ", end="")
-    else:
-        print(f"[{ts}] ", end="")
-    ts = timestamp()
-    print(f"[{ts}] ", end="")
-    print(*args, **kwargs)
-    return
 
 
 def log_trace(*args, **kwargs) -> None:

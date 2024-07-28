@@ -1,20 +1,21 @@
-from typing import Tuple
 from torch import Tensor
+from typing import Tuple
+
 from config import START, END, N, TOL, SECS
-from torch.utils.data import DataLoader
+import logger
+import numpy as np
+import sympy as sp
 import torch
 import torch.nn as nn
 from avg_meter import AverageMeter
-from tokenizer import Tokenizer
-from tqdm import tqdm
-from timeout import timeout
-import sympy as sp
-from sympy import Expr, Symbol
-from refactor import prefix_to_sympy
-import numpy as np
 from components import VARIABLES
-import logger
 from logger import timestamp
+from refactor import prefix_to_sympy
+from sympy import Expr, Symbol
+from timeout import timeout
+from tokenizer import Tokenizer
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 
 def greedy_decode(

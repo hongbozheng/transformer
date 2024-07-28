@@ -1,15 +1,16 @@
 from torch import Tensor
+
 from config import START, END, N, TOL, SECS
 import logger
 import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from avg_meter import AverageMeter
 from logger import timestamp
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from avg_meter import AverageMeter
 from val import equiv
 
 

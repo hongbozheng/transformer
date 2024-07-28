@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 
+import torch.nn as nn
 from config import get_config, DEVICE
-from tokenizer import Tokenizer
 from dataset import EquivExpr
-from torch.utils.data import DataLoader
-from transformer import Transformer
-from train import train_model
+from tokenizer import Tokenizer
 from torch.optim import Adam
 from torch.optim.lr_scheduler import CosineAnnealingLR
-import torch.nn as nn
+from torch.utils.data import DataLoader
+from train import train_model
+from transformer import Transformer
 
 
 def main() -> None:

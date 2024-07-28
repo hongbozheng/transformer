@@ -1,9 +1,10 @@
-from typing import List, Dict
-import torch
 from torch import Tensor
+from typing import Dict, List
+
+import torch
+from tokenizer import Tokenizer
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
-from tokenizer import Tokenizer
 
 
 class EquivExpr(Dataset):

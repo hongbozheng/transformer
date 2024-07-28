@@ -2,11 +2,11 @@
 
 
 from config import get_config, DEVICE
-from tokenizer import Tokenizer
 from dataset import EquivExpr
+from test import test_model
+from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
 from transformer import Transformer
-from test import test_model
 
 
 def main() -> None:
