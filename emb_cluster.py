@@ -3,6 +3,7 @@
 
 from torch import Tensor
 from typing import List
+
 import argparse
 from config import get_config, DEVICE, SEED
 import logger
@@ -11,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from collections import Counter
-from dataset import CL_KMeans
+from dataset import KMC
 from logger import timestamp
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -41,7 +42,7 @@ def embedding(
         src_mask = batch["src_mask"].to(device=device)
         emb = model.encode(x=src, mask=src_mask)
         emb, _ = emb.max(dim=1, keepdim=False)
-        embs.append(emb)
+        embs.append(emb.detach().cpu())
         loader_tqdm.set_description(
             desc=f"[{timestamp()}] [Batch {i+1}]",
             refresh=True
@@ -52,8 +53,11 @@ def embedding(
     return embs
 
 
-def calculate_acc(rest_labels: list, n_clusters: int, dataset: Dataset) -> None:
-    len_cluster = dataset.sizes
+def calculate_acc(
+        n_clusters: int,
+        len_cluster: List[int],
+        rest_labels: List[int],
+) -> None:
     all_labels = {i for i in range(n_clusters)}
     used_labels = []
     accs = []
@@ -150,15 +154,15 @@ def main() -> None:
 
     tokenizer = Tokenizer()
 
-    cl_dataset = CL_KMeans(filepath=filepath, tokenizer=tokenizer)
+    kmc = KMC(filepath=filepath, tokenizer=tokenizer)
 
-    cl_loader = DataLoader(
-        dataset=cl_dataset,
+    kmc_loader = DataLoader(
+        dataset=kmc,
         batch_size=cfg.LOADER.VAL.BATCH_SIZE,
-        shuffle=cfg.LOADER.TRAIN.SHUFFLE,
-        num_workers=cfg.LOADER.TRAIN.NUM_WORKERS,
-        collate_fn=cl_dataset.collate_fn,
-        pin_memory=cfg.LOADER.TRAIN.PIN_MEMORY,
+        shuffle=cfg.LOADER.VAL.SHUFFLE,
+        num_workers=cfg.LOADER.VAL.NUM_WORKERS,
+        collate_fn=kmc.collate_fn,
+        pin_memory=cfg.LOADER.VAL.PIN_MEMORY,
     )
 
     model = Transformer(
@@ -178,12 +182,12 @@ def main() -> None:
         model=model,
         device=DEVICE,
         ckpt_filepath=cfg.BEST_MODEL.TX,
-        data_loader=cl_loader,
+        data_loader=kmc_loader,
     )
-    embs = embs.cpu().detach().numpy()
+    embs = embs.numpy()
 
     kmeans = KMeans(
-        n_clusters=cl_dataset.n_clusters,
+        n_clusters=kmc.n_clusters,
         max_iter=cfg.KMEANS.MAX_ITER,
         tol=cfg.KMEANS.TOL,
         random_state=cfg.KMEANS.RANDOM_STATE,
@@ -194,17 +198,17 @@ def main() -> None:
     print(kmeans.labels_)
 
     calculate_acc(
+        n_clusters=kmc.n_clusters,
+        len_cluster=kmc.sizes,
         rest_labels=list(kmeans.labels_),
-        n_clusters=cl_dataset.n_clusters,
-        dataset=cl_dataset,
     )
 
-    emb_plt(
-        method=method,
-        embs=embs,
-        perplexity=cfg.DIM_RED.PERPLEXITY,
-        gt=cl_dataset.gt,
-    )
+    # emb_plt(
+    #     method=method,
+    #     embs=embs,
+    #     perplexity=cfg.DIM_RED.PERPLEXITY,
+    #     gt=kmc_loader.gt,
+    # )
 
     return
 

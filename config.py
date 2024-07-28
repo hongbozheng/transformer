@@ -43,26 +43,9 @@ _C.BEST_MODEL.TX = _C.BEST_MODEL.DIR + "/tx.ckpt"
 
 
 # -----------------------------------------------------------------------------
-# Data
-# -----------------------------------------------------------------------------
-_C.DATA = CN()
-
-""" EquivExpr """
-_C.DATA.DATA_DIR = "data"
-_C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_triple_train.txt"
-
-
-# -----------------------------------------------------------------------------
 # Loader
 # -----------------------------------------------------------------------------
 _C.LOADER = CN()
-
-""" Train DataLoader """
-_C.LOADER.TRAIN = CN()
-_C.LOADER.TRAIN.BATCH_SIZE = 512
-_C.LOADER.TRAIN.SHUFFLE = False
-_C.LOADER.TRAIN.NUM_WORKERS = 1
-_C.LOADER.TRAIN.PIN_MEMORY = True
 
 """ Val DataLoader """
 _C.LOADER.VAL = CN()
@@ -82,18 +65,6 @@ torch.cuda.manual_seed_all(seed=SEED)
 torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 LOG_LEVEL = LogLevel.INFO
-
-
-# -----------------------------------------------------------------------------
-# Training
-# -----------------------------------------------------------------------------
-_C.TRAIN = CN()
-
-""" Training """
-_C.TRAIN.N_EPOCHS = 35
-_C.TRAIN.TEMPERATURE = 0.1
-_C.TRAIN.REDUCTION = "mean"
-_C.TRAIN.MAX_NORM = 1.0
 
 
 # -----------------------------------------------------------------------------

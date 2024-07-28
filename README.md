@@ -1,22 +1,14 @@
-# Contrastive Learning on Mathematical Expression Embeddings
-
-## Train
-#### Training Configuration
-To modify training configuration, check `config.py` file.
-
-#### Start training
-To train transformer model with contrastive learning
-```
-./train_tx.py
-```
+# Embedding Algebra & Embedding K-means Clustering
 
 ## Model
 #### Trained model
-Trained models will be in `models` folder.
+Place trained model(s) in `models` folder.
 
+## Embedding K-means Clustering
+#### Inference configuration
+To modify inference configuration, check `config.py` file.
 
-## Evaluation
-#### K-Means Clustering
+#### K-means Clustering Evaluation
 Check command line input help
 ```
 ./emb_cluster.py -h

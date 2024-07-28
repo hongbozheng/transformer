@@ -4,13 +4,13 @@ Reference: https://pytorch.org/tutorials/beginner/translation_transformer.html
 """
 
 
-from typing import Tuple
 from torch import Tensor
-from typing import Optional
+from typing import Optional, Tuple
+
 import logger
+import math
 import torch
 import torch.nn as nn
-import math
 
 
 class Embedding(nn.Module):
