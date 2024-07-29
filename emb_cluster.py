@@ -17,7 +17,7 @@ from logger import timestamp
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from tokenizer import Tokenizer
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformer import Transformer
 from umap import UMAP
@@ -28,7 +28,7 @@ def embedding(
         device: torch.device,
         ckpt_filepath: str,
         data_loader: DataLoader,
-) -> torch.Tensor:
+) -> Tensor:
     logger.log_info("Generate expression embeddings...")
     model.to(device=device)
     model.eval()
@@ -37,6 +37,7 @@ def embedding(
 
     embs = []
     loader_tqdm = tqdm(iterable=data_loader)
+    loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
     for i, batch in enumerate(loader_tqdm):
         src = batch["src"].to(device=device)
         src_mask = batch["src_mask"].to(device=device)
@@ -45,7 +46,7 @@ def embedding(
         embs.append(emb.detach().cpu())
         loader_tqdm.set_description(
             desc=f"[{timestamp()}] [Batch {i+1}]",
-            refresh=True
+            refresh=True,
         )
     embs = torch.cat(tensors=embs, dim=0)
     logger.log_info("Finish generating expression embeddings")
@@ -203,12 +204,12 @@ def main() -> None:
         rest_labels=list(kmeans.labels_),
     )
 
-    # emb_plt(
-    #     method=method,
-    #     embs=embs,
-    #     perplexity=cfg.DIM_RED.PERPLEXITY,
-    #     gt=kmc_loader.gt,
-    # )
+    emb_plt(
+        method=method,
+        embs=embs,
+        perplexity=cfg.DIM_RED.PERPLEXITY,
+        gt=kmc.gt,
+    )
 
     return
 
