@@ -45,7 +45,6 @@ class EA(Dataset):
             "src": src,
             "src_mask": src_mask,
         }
-        return
 
 
 class KMC(Dataset):
