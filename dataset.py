@@ -149,3 +149,57 @@ class IR(Dataset):
             "src": src,
             "src_mask": src_mask,
         }
+
+
+class ED(Dataset):
+    def __init__(self, filepath: str, tokenizer: Tokenizer) -> None:
+        self.exprs = []
+        self.gt = []
+        self.deri_sizes = []
+        self.tokenizer = tokenizer
+
+        i = 0
+
+        file = open(file=filepath, mode='r', encoding="utf-8")
+        for line in file:
+            expr = line.strip()
+            if expr:
+                if i == 0:
+                    expr, id = expr.split(sep='\t')
+                    self.gt.append(int(id))
+                self.exprs.append(expr)
+                i += 1
+            else:
+                self.deri_sizes.append(i)
+                i = 0
+        file.close()
+
+        assert len(self.gt) == len(self.deri_sizes)
+        assert len(self.exprs) == sum(self.deri_sizes)
+
+        return
+
+    def __len__(self) -> int:
+        return len(self.exprs)
+
+    def __getitem__(self, idx: int) -> Dict[str, Tensor]:
+        expr = self.exprs[idx]
+        tokens = self.tokenizer.encode(expr=expr)
+        return {"src": tokens}
+
+    def collate_fn(self, batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
+        src = [item["src"] for item in batch]
+
+        src = pad_sequence(
+            sequences=src,
+            batch_first=True,
+            padding_value=self.tokenizer.comp2idx["PAD"],
+        )
+        # [batch_size, 1 (n_heads), 1, seq_len]
+        src_mask = torch.ne(input=src, other=self.tokenizer.comp2idx["PAD"]) \
+            .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.uint8)
+
+        return {
+            "src": src,
+            "src_mask": src_mask,
+        }

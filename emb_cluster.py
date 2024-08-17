@@ -34,6 +34,7 @@ def embedding(
     model.eval()
     ckpt = torch.load(f=ckpt_filepath, map_location=device)
     model.load_state_dict(state_dict=ckpt["model"])
+    logger.log_info(f"Loaded model '{ckpt_filepath}'")
 
     embs = []
     loader_tqdm = tqdm(iterable=data_loader)
@@ -134,6 +135,13 @@ def main() -> None:
                     "and perform KMeans-Clustering"
     )
     parser.add_argument(
+        "--ckpt_filepath",
+        "-m",
+        type=str,
+        required=True,
+        help="model checkpoint filepath",
+    )
+    parser.add_argument(
         "--filepath",
         "-f",
         type=str,
@@ -150,6 +158,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+    ckpt_filepath = args.ckpt_filepath
     filepath = args.filepath
     method = args.method
 
@@ -182,7 +191,7 @@ def main() -> None:
     embs = embedding(
         model=model,
         device=DEVICE,
-        ckpt_filepath=cfg.BEST_MODEL.TX,
+        ckpt_filepath=ckpt_filepath,
         data_loader=kmc_loader,
     )
     embs = embs.numpy()
