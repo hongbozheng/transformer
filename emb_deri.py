@@ -9,46 +9,12 @@ import argparse
 from config import get_config, DEVICE, SEED
 import logger
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from dataset import ED
-from logger import timestamp
+from emb import embedding
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 from transformer import Transformer
-
-
-def embedding(
-        model: nn.Module,
-        device: torch.device,
-        ckpt_filepath: str,
-        data_loader: DataLoader,
-) -> List[Tensor]:
-    logger.log_info("Generate expression embeddings...")
-    model.to(device=device)
-    model.eval()
-    ckpt = torch.load(f=ckpt_filepath, map_location=device)
-    model.load_state_dict(state_dict=ckpt["model"])
-    logger.log_info(f"Loaded model '{ckpt_filepath}'")
-
-    embs = []
-    loader_tqdm = tqdm(iterable=data_loader)
-    loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
-    for i, batch in enumerate(loader_tqdm):
-        src = batch["src"].to(device=device)
-        src_mask = batch["src_mask"].to(device=device)
-        emb = model.encode(x=src, mask=src_mask)
-        emb, _ = emb.max(dim=1, keepdim=False)
-        embs.append(emb.detach().cpu())
-        loader_tqdm.set_description(
-            desc=f"[{timestamp()}] [Batch {i+1}]",
-            refresh=True,
-        )
-    embs = torch.cat(tensors=embs, dim=0)
-    logger.log_info("Finish generating expression embeddings")
-
-    return embs
 
 
 def emb_deri(embs: Tensor, deri_sizes: List[int], gt: List[int]) -> None:
@@ -98,10 +64,19 @@ def main() -> None:
         required=True,
         help="derivations filepath",
     )
+    parser.add_argument(
+        "--mode",
+        "-e",
+        type=str,
+        required=True,
+        choices=["mean", "max"],
+        help="embedding mode",
+    )
 
     args = parser.parse_args()
     ckpt_filepath = args.ckpt_filepath
     filepath = args.filepath
+    mode = args.mode
 
     tokenizer = Tokenizer()
 
@@ -134,6 +109,7 @@ def main() -> None:
         device=DEVICE,
         ckpt_filepath=ckpt_filepath,
         data_loader=ed_loader,
+        mode=mode,
     )
 
     emb_deri(
