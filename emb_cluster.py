@@ -124,7 +124,7 @@ def main() -> None:
         "--dim_red",
         "-d",
         type=str,
-        required=True,
+        required=False,
         choices=["UMAP", "t-SNE"],
         help="dimension reduction method",
     )
@@ -187,12 +187,13 @@ def main() -> None:
         rest_labels=list(kmeans.labels_),
     )
 
-    emb_plt(
-        method=method,
-        embs=embs,
-        perplexity=cfg.DIM_RED.PERPLEXITY,
-        gt=kmc.gt,
-    )
+    if method:
+        emb_plt(
+            method=method,
+            embs=embs,
+            perplexity=cfg.DIM_RED.PERPLEXITY,
+            gt=kmc.gt,
+        )
 
     return
 
