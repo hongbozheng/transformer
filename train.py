@@ -34,9 +34,10 @@ def train_epoch(
         # embs = model(src=src, src_mask=src_mask)
         # print(embs)
         # print(embs.size())
-        src_mask = src_mask.squeeze(dim=1).squeeze(dim=1)
-        # print(src_mask)
-        # print(src_mask.size())
+        src_mask = src_mask.squeeze(dim=(-3, -2))
+        src_mask[:, 0] = 0
+        last_1 = src_mask.sum(dim=1)
+        src_mask[torch.arange(src_mask.size(dim=0)), last_1] = 0
         embs[src_mask==0] = float("-inf")
         # print(embs)
         # print(embs.size())
