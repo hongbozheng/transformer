@@ -83,6 +83,11 @@ _C.CRITERION.SIMCSE = CN()
 _C.CRITERION.SIMCSE.TEMPERATURE = 0.1
 _C.CRITERION.SIMCSE.REDUCTION = "mean"
 
+""" Contrastive Loss """
+_C.CRITERION.CL = CN()
+_C.CRITERION.CL.MARGIN = 1.0
+_C.CRITERION.CL.REDUCTION = "mean"
+
 
 # -----------------------------------------------------------------------------
 # Data

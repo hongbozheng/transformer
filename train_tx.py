@@ -2,7 +2,7 @@
 
 
 from config import get_config, DEVICE
-from criterion import InfoNCE
+from criterion import ContrastiveLoss, InfoNCE, SimCSE
 from dataset import CL
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
@@ -83,6 +83,16 @@ def main() -> None:
         temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
         reduction=cfg.CRITERION.INFONCE.REDUCTION,
     )
+
+    # criterion = SimCSE(
+    #     temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
+    #     reduction=cfg.CRITERION.INFONCE.REDUCTION,
+    # )
+
+    # criterion = ContrastiveLoss(
+    #     margin=cfg.CRITERION.CL.MARGIN,
+    #     reduction=cfg.CRITERION.CL.REDUCTION,
+    # )
 
     train_model(
         model=model,

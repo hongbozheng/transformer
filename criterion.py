@@ -40,6 +40,36 @@ class InfoNCE(nn.Module):
         return loss
 
 
+class ContrastiveLoss(nn.Module):
+    def __init__(self, margin: float, reduction: str) -> None:
+        super().__init__()
+        self.margin = margin
+        self.reduction = reduction
+        return
+
+    def forward(
+            self,
+            query: Tensor,
+            pos_key: Tensor,
+            neg_key: Tensor
+    ) -> Tensor:
+        pos_logit = F.cosine_similarity(x1=query, x2=pos_key, dim=1, eps=1e-8)
+        neg_logit = F.cosine_similarity(x1=query, x2=neg_key, dim=1, eps=1e-8)
+
+        loss = F.relu(input=self.margin+neg_logit-pos_logit)
+
+        if self.reduction == "mean":
+            loss = loss.mean()
+        elif self.reduction == "sum":
+            loss = loss.sum()
+        else:
+            logger.log_error(
+                "Invalid reduction. Please choose from {'mean', 'sum'}."
+            )
+
+        return loss
+
+
 class SimCSE(nn.Module):
     def __init__(self, temperature: float, reduction: str) -> None:
         super().__init__()
