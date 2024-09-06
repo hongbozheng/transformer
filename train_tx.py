@@ -6,8 +6,8 @@ from criterion import InfoNCE
 from dataset import CL
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 from train import train_model
 from transformer import Transformer
 
@@ -58,22 +58,30 @@ def main() -> None:
         dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
     )
 
-    optimizer = Adam(
+    optimizer = AdamW(
         params=model.parameters(),
-        lr=cfg.MODEL.TX.LR,
-        weight_decay=cfg.MODEL.TX.WEIGHT_DECAY,
+        lr=cfg.OPTIM.ADAMW.LR,
+        weight_decay=cfg.OPTIM.ADAMW.WEIGHT_DECAY,
     )
 
-    lr_scheduler = CosineAnnealingLR(
+    # lr_scheduler = CosineAnnealingLR(
+    #     optimizer=optimizer,
+    #     T_max=50,
+    #     eta_min=1e-8,
+    #     last_epoch=-1,
+    # )
+
+    lr_scheduler = CosineAnnealingWarmRestarts(
         optimizer=optimizer,
-        T_max=10,
-        eta_min=1e-8,
-        last_epoch=-1,
+        T_0=cfg.LRS.CAWR.T_0,
+        T_mult=cfg.LRS.CAWR.T_MULT,
+        eta_min=cfg.LRS.CAWR.ETA_MIN,
+        last_epoch=cfg.LRS.CAWR.LAST_EPOCH,
     )
 
     criterion = InfoNCE(
-        temperature=cfg.TRAIN.TEMPERATURE,
-        reduction=cfg.TRAIN.REDUCTION,
+        temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
+        reduction=cfg.CRITERION.INFONCE.REDUCTION,
     )
 
     train_model(

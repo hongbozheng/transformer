@@ -40,7 +40,7 @@ class InfoNCE(nn.Module):
         return loss
 
 
-class ContrastiveLoss(nn.Module):
+class SimCSE(nn.Module):
     def __init__(self, temperature: float, reduction: str) -> None:
         super().__init__()
         self.temperature = temperature
