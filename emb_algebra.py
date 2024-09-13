@@ -93,6 +93,14 @@ def main() -> None:
         help="model checkpoint filepath",
     )
     parser.add_argument(
+        "--mode",
+        "-e",
+        type=str,
+        required=True,
+        choices=["mean", "max"],
+        help="embedding mode",
+    )
+    parser.add_argument(
         "--pool",
         "-p",
         type=str,
@@ -105,14 +113,6 @@ def main() -> None:
         type=str,
         required=True,
         help="embedding algebra filepath",
-    )
-    parser.add_argument(
-        "--mode",
-        "-e",
-        type=str,
-        required=True,
-        choices=["mean", "max"],
-        help="embedding mode",
     )
 
     args = parser.parse_args()
