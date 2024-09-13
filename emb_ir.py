@@ -16,23 +16,20 @@ from torch.utils.data import DataLoader
 from transformer import Transformer
 
 
-def emb_ir(embs: Tensor, gt: List[int]) -> None:
-    embs = embs.view(-1, 6, 512)
+def emb_ir(embs: Tensor, k: int, gt: List[int]) -> None:
+    embs = F.normalize(input=embs, p=2.0, dim=-1, eps=1e-12)
+    cos_mat = embs @ embs.T
+    cos_mat.fill_diagonal_(fill_value=-float('inf'))
 
-    queries = embs[:, 0, :]
-    candidates = embs[:, 1:, :]
-
-    cos_sim = cos_sim = F.cosine_similarity(
-        x1=queries.unsqueeze(dim=1),
-        x2=candidates,
-        dim=-1,
-    )
-
-    preds = torch.argmax(input=cos_sim, dim=1)
+    _, ids = torch.topk(input=cos_mat, k=k, dim=1)
     gt = torch.tensor(data=gt, dtype=torch.int64)
-    corrects = torch.eq(input=preds, other=gt).sum().item()
+    preds = gt[ids]
+    gt = gt.unsqueeze(dim=1).repeat(1, k)
 
-    logger.log_info(f"Accuracy {corrects/gt.size(dim=0)*100:.4f}%")
+    acc = torch.eq(input=preds, other=gt).to(torch.float64).mean(dim=1)
+    acc = acc.mean().item()
+
+    logger.log_info(f"Accuracy {acc*100:.4f}%")
 
     return
 
@@ -53,19 +50,26 @@ def main() -> None:
         help="model checkpoint filepath",
     )
     parser.add_argument(
-        "--filepath",
-        "-f",
-        type=str,
-        required=True,
-        help="embedding ir filepath",
-    )
-    parser.add_argument(
         "--mode",
         "-e",
         type=str,
         required=True,
         choices=["mean", "max"],
         help="embedding mode",
+    )
+    parser.add_argument(
+        "--topk",
+        "-k",
+        type=int,
+        required=True,
+        help="topk ir result(s)",
+    )
+    parser.add_argument(
+        "--filepath",
+        "-f",
+        type=str,
+        required=True,
+        help="embedding ir filepath",
     )
 
     args = parser.parse_args()
@@ -107,7 +111,7 @@ def main() -> None:
         mode=mode,
     )
 
-    emb_ir(embs=embs, gt=ir.gt)
+    emb_ir(embs=embs, gt=ir.gt, k=10)
 
     return
 
