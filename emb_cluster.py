@@ -6,6 +6,7 @@ from typing import List
 
 import argparse
 from config import get_config, DEVICE, SEED
+import logger
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
@@ -51,7 +52,11 @@ def calculate_acc(
         most_label = hard_labels[i]
         labels = hard_clusters[i]
         accs.append(labels.count(most_label)/len(labels))
-    print(np.mean(accs))
+
+    acc = np.mean(a=accs)
+    logger.log_info(f"Accuracy {acc*100:.4f}%")
+
+    return
 
 
 def emb_plt(method: str, embs: Tensor, perplexity: int, gt: List[int]) -> None:
@@ -62,30 +67,23 @@ def emb_plt(method: str, embs: Tensor, perplexity: int, gt: List[int]) -> None:
     elif method == "t-SNE":
         tsne = TSNE(n_components=2, perplexity=perplexity, random_state=SEED)
         embs = tsne.fit_transform(X=embs)
-    scatter = plt.scatter(x=embs[:, 0], y=embs[:, 1], c=gt, cmap="Spectral", s=5)
+
     plt.rc(group="font", family="serif")
     plt.rc(group="text", usetex=False)
-    plt.title(rf"{method} Embeddings")
-    plt.xlabel(rf"{method} Dimension 1")
-    plt.ylabel(rf"{method} Dimension 2")
-    legend = plt.legend(
-        *scatter.legend_elements(),
-        loc=0,
-        ncols=1,
-        fontsize='xx-small',
-        markerscale=0.5,
-        framealpha=0.5,
-        title="Classes",
-        title_fontsize='xx-small',
-        borderpad=0.1,
-        labelspacing=0.1,
-    )
-    plt.gca().add_artist(legend)
-    legend.get_frame().set_edgecolor(color='black')
-    legend.get_frame().set_linewidth(w=0.5)
-    legend.get_frame().set_alpha(alpha=0.5)
 
-    plt.savefig(f"{method}.png", dpi=1000)
+    colors = ['#377eb8', '#ff7f00', '#4daf4a',
+              '#f781bf', '#a65628', '#984ea3',
+              '#999999', '#e41a1c', '#dede00',]
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 10))
+    ax.scatter(x=embs[:, 0], y=embs[:, 1], c=gt, cmap="Spectral", s=5)
+    ax.spines["top"].set_visible(b=False)
+    ax.spines["bottom"].set_visible(b=False)
+    ax.spines["left"].set_visible(b=False)
+    ax.spines["right"].set_visible(b=False)
+
+    plt.tight_layout()
+    plt.savefig(f"{method}.svg", transparent=True, dpi=100, format="svg")
 
     return
 
@@ -106,19 +104,19 @@ def main() -> None:
         help="model checkpoint filepath",
     )
     parser.add_argument(
-        "--filepath",
-        "-f",
-        type=str,
-        required=True,
-        help="expressions filepath",
-    )
-    parser.add_argument(
         "--mode",
         "-e",
         type=str,
         required=True,
         choices=["mean", "max"],
         help="embedding mode",
+    )
+    parser.add_argument(
+        "--filepath",
+        "-f",
+        type=str,
+        required=True,
+        help="expressions filepath",
     )
     parser.add_argument(
         "--dim_red",
@@ -178,8 +176,6 @@ def main() -> None:
     )
     kmeans.fit(X=embs)
     kmeans.predict(X=embs)
-
-    print(kmeans.labels_)
 
     calculate_acc(
         n_clusters=kmc.n_clusters,
