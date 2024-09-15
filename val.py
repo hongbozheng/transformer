@@ -120,7 +120,7 @@ def equiv(
         src = prefix_to_sympy(expr=expr_pair[0])
         tgt = prefix_to_sympy(expr=expr_pair[1])
     except Exception as e:
-        logger.log_error(
+        logger.log_debug(
             f"prefix_to_sympy exception {e}; {expr_pair[0]} & {expr_pair[1]}"
         )
         return False
@@ -128,7 +128,7 @@ def equiv(
         src = _simplify(expr=src)
         tgt = _simplify(expr=tgt)
     except Exception as e:
-        logger.log_error(
+        logger.log_debug(
             f"simplify exception {e}; {expr_pair[0]} & {expr_pair[1]}"
         )
         return False
@@ -159,12 +159,12 @@ def equiv(
                     f"subs_evalf, equiv    ; {expr_pair[0]} & {expr_pair[1]}"
                 )
             else:
-                logger.log_error(
+                logger.log_debug(
                     f"subs_evalf, non-equiv; {expr_pair[0]} & {expr_pair[1]}"
                 )
             return res
         except Exception as e:
-            logger.log_error(
+            logger.log_debug(
                 f"_check_equiv exception {e}; {expr_pair[0]} & {expr_pair[1]}"
             )
             return False

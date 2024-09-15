@@ -14,7 +14,7 @@ _C.BASE = ['']
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 
-""" =============== Transformer =============== """
+""" Transformer """
 _C.MODEL.TX = CN()
 _C.MODEL.TX.EMB_DIM = 512
 # _C.MODEL.TX.SRC_VOCAB_SIZE = len(tokenizer.components)
@@ -26,10 +26,6 @@ _C.MODEL.TX.N_DECODER_LAYERS = 6
 _C.MODEL.TX.N_HEADS = 8
 _C.MODEL.TX.DROPOUT = 0.1
 _C.MODEL.TX.DIM_FEEDFORWARD = 2048
-
-""" AdamW """
-_C.MODEL.TX.LR = 1e-4
-_C.MODEL.TX.WEIGHT_DECAY = 1e-7
 
 
 # -----------------------------------------------------------------------------
@@ -43,6 +39,46 @@ _C.BEST_MODEL.TX = _C.BEST_MODEL.DIR + "/tx.ckpt"
 
 
 # -----------------------------------------------------------------------------
+# Optimizer
+# -----------------------------------------------------------------------------
+_C.OPTIM = CN()
+
+""" AdamW """
+_C.OPTIM.ADAMW = CN()
+_C.OPTIM.ADAMW.LR = 1e-4
+_C.OPTIM.ADAMW.WEIGHT_DECAY = 1e-2
+
+
+# -----------------------------------------------------------------------------
+# Learning Rate Scheduler
+# -----------------------------------------------------------------------------
+_C.LRS = CN()
+
+""" CosineAnnealingWarmRestarts """
+_C.LRS.CAWR = CN()
+_C.LRS.CAWR.T_0 = 10
+_C.LRS.CAWR.T_MULT = 2
+_C.LRS.CAWR.ETA_MIN = 1e-8
+_C.LRS.CAWR.LAST_EPOCH = -1
+
+""" CosineAnnealingLR """
+_C.LRS.CALR = CN()
+_C.LRS.CALR.T_MAX = 50
+_C.LRS.CALR.ETA_MIN = 1e-8
+_C.LRS.CALR.LAST_EPOCH = -1
+
+
+# -----------------------------------------------------------------------------
+# Criterion
+# -----------------------------------------------------------------------------
+_C.CRITERION = CN()
+
+""" CrossEntropy """
+_C.CRITERION.CROSSENTROPY = CN()
+_C.CRITERION.CROSSENTROPY.LABEL_SMOOTHING = 0.1
+
+
+# -----------------------------------------------------------------------------
 # Data
 # -----------------------------------------------------------------------------
 _C.DATA = CN()
@@ -51,7 +87,6 @@ _C.DATA = CN()
 _C.DATA.DATA_DIR = "data"
 _C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_pairs.txt"
 _C.DATA.VAL_FILE = _C.DATA.DATA_DIR + "/exprs_val.txt"
-_C.DATA.TEST_FILE = _C.DATA.DATA_DIR + "/exprs_test.txt"
 
 
 # -----------------------------------------------------------------------------
@@ -61,24 +96,17 @@ _C.LOADER = CN()
 
 """ Train DataLoader """
 _C.LOADER.TRAIN = CN()
-_C.LOADER.TRAIN.BATCH_SIZE = 128
+_C.LOADER.TRAIN.BATCH_SIZE = 256
 _C.LOADER.TRAIN.SHUFFLE = False
 _C.LOADER.TRAIN.NUM_WORKERS = 1
 _C.LOADER.TRAIN.PIN_MEMORY = True
 
 """ Val DataLoader """
 _C.LOADER.VAL = CN()
-_C.LOADER.VAL.BATCH_SIZE = 128
+_C.LOADER.VAL.BATCH_SIZE = 256
 _C.LOADER.VAL.SHUFFLE = False
 _C.LOADER.VAL.NUM_WORKERS = 1
 _C.LOADER.VAL.PIN_MEMORY = True
-
-""" Test DataLoader """
-_C.LOADER.TEST = CN()
-_C.LOADER.TEST.BATCH_SIZE = 5
-_C.LOADER.TEST.SHUFFLE = False
-_C.LOADER.TEST.NUM_WORKERS = 1
-_C.LOADER.TEST.PIN_MEMORY = True
 
 
 # -----------------------------------------------------------------------------
@@ -99,9 +127,8 @@ LOG_LEVEL = LogLevel.INFO
 _C.TRAIN = CN()
 
 """ Training """
-_C.TRAIN.N_EPOCHS = 25
-_C.TRAIN.LABEL_SMOOTHING = 0.1
-_C.TRAIN.MAX_NORM = 1.0
+_C.TRAIN.N_EPOCHS = 50
+_C.TRAIN.MAX_NORM = 4.0
 
 
 # -----------------------------------------------------------------------------

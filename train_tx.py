@@ -5,8 +5,8 @@ import torch.nn as nn
 from config import get_config, DEVICE
 from dataset import EquivExpr
 from tokenizer import Tokenizer
-from torch.optim import Adam
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 from train import train_model
 from transformer import Transformer
@@ -62,22 +62,30 @@ def main() -> None:
         dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
     )
 
-    optimizer = Adam(
+    optimizer = AdamW(
         params=model.parameters(),
-        lr=cfg.MODEL.TX.LR,
-        weight_decay=cfg.MODEL.TX.WEIGHT_DECAY,
+        lr=cfg.OPTIM.ADAMW.LR,
+        weight_decay=cfg.OPTIM.ADAMW.WEIGHT_DECAY,
     )
 
-    lr_scheduler = CosineAnnealingLR(
+    # lr_scheduler = CosineAnnealingLR(
+    #     optimizer=optimizer,
+    #     T_max=10,
+    #     eta_min=1e-8,
+    #     last_epoch=-1,
+    # )
+
+    lr_scheduler = CosineAnnealingWarmRestarts(
         optimizer=optimizer,
-        T_max=10,
-        eta_min=1e-8,
-        last_epoch=-1,
+        T_0=cfg.LRS.CAWR.T_0,
+        T_mult=cfg.LRS.CAWR.T_MULT,
+        eta_min=cfg.LRS.CAWR.ETA_MIN,
+        last_epoch=cfg.LRS.CAWR.LAST_EPOCH,
     )
 
     criterion = nn.CrossEntropyLoss(
         ignore_index=tokenizer.comp2idx["PAD"],
-        label_smoothing=cfg.TRAIN.LABEL_SMOOTHING,
+        label_smoothing=cfg.CRITERION.CROSSENTROPY.LABEL_SMOOTHING,
     )
 
     train_model(
