@@ -23,29 +23,29 @@ class TrainingArguments(Serializable):
     val_file: str                                # Validation file path.
     save_dir: str                                # Output directory for models.
     project_name: Optional[str] = None           # Project name for Wandb.
-    max_seq_len: int = 512                       # Maximum sequence length. Expressions longer than this value will be skipped.
-    max_out_len: int = 100                       # Maximum length to use during decoding.
-    max_n_pos: int = 1024                        # Max length for positional embedding.
+    max_seq_len: int = 200                       # Maximum sequence length. Expressions longer than this value will be skipped.
+    max_out_len: int = 200                       # Maximum length to use during decoding.
+    max_n_pos: int = 200                         # Max length for positional embedding.
     max_train_examples: int = -1                 # Maximum number of training examples to read from the file.
     max_val_examples: int = -1                   # Maximum number of validation examples to read from the file.
-    seed: Optional[int] = None                   # Random seed value.
-    train_batch_size: int = 64                   # Batch size for training.
-    val_batch_size: int = 64                     # Batch size for validation.
+    seed: Optional[int] = 42                     # Random seed value.
+    train_batch_size: int = 256                  # Batch size for training.
+    val_batch_size: int = 256                    # Batch size for validation.
     lr: float = 0.0001                           # Learning rate for training.
-    weight_decay: float = 0.0                    # Weight decay for the optimizer.
-    optim: str = "Adam"                          # Optimizer for training.
+    weight_decay: float = 0.01                   # Weight decay for the optimizer.
+    optim: str = "AdamW"                         # Optimizer for training.
     n_epochs: int = 20                           # Number of epochs.
     track_grad_norm: int = -1                    # Which grad norm to track.
     run_name: str = "test"                       # Run name.
-    grad_clip_val: float = 0.0                   # Gradient clip threshold.
+    grad_clip_val: float = 4.0                   # Gradient clip threshold.
     grad_clip_algo: str = "norm"                 # Gradient clip algorithm.
-    precision: int = 16                          # Precision to use for training.
-    sympy_timeout: int = 2                       # Timeout for SymPy operations.
+    precision: int = 32                          # Precision to use for training.
+    sympy_timeout: int = 10                      # Timeout for SymPy operations.
     early_stopping: Optional[int] = None         # If provided, the early stopping callback is enabled with patience as the value of this argument.
     semvec: bool = False                         # If job is being run for one of the SemVec datasets.
     n_min_epochs: Optional[int] = None           # Force training to atleast these many epochs (optionally to be used with early_stopping).
     bool_dataset: bool = False                   # If the dataset consists of boolean expressions.
-    label_smoothing: float = 0.0                 # Label smoothing to use while computing loss.
+    label_smoothing: float = 0.1                 # Label smoothing to use while computing loss.
     autoencoder: bool = False                    # If it should be run as autoencoder.
 
 

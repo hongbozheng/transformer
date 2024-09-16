@@ -1,19 +1,20 @@
+from torch import Tensor
+from typing import List, Tuple, Optional
+
 import math
+import numpy as np
+import pytorch_lightning as pl
+import sympy as sp
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import pytorch_lightning as pl
-import sympy as sp
-from sympy import *
-from sympy.calculus.util import continuous_domain
-import numpy as np
 from ..constants import *
-from typing import Optional, List
-from torch import Tensor
-from .txdecoder import *
 from .hypothesis import BeamHypotheses
+from sympy import Expr, Symbol
 from ..timeout import timeout
 from ..tokenizer import Tokenizer
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from .txdecoder import *
 
 # Reference: https://pytorch.org/tutorials/beginner/translation_transformer.html
 
@@ -73,11 +74,11 @@ class ExpEmbTx(pl.LightningModule):
         batch_first: bool = False,
         norm_first: bool = True,
         max_out_len: int = 100,
-        optim: str = "Adam",
-        lr: float = 0.0001,
+        optim: str = "AdamW",
+        lr: float = 1e-4,
         weight_decay: float = 0.0,
         beam_sizes: list = [],
-        sympy_timeout: int = 15,
+        sympy_timeout: int = 10,
         bool_dataset: bool = False,
         activation: str = "relu",
         label_smoothing: float = 0.0,
@@ -298,11 +299,22 @@ class ExpEmbTx(pl.LightningModule):
         else:
             raise Exception(f"{self.optim} optimizer is not supported.")
 
-        return optimizer
+        lr_scheduler = CosineAnnealingWarmRestarts(
+            optimizer=optimizer,
+            T_0=10,
+            T_mult=2,
+            eta_min=1e-8,
+            last_epoch=-1,
+        )
+
+        return [optimizer], [lr_scheduler]
 
 
     def training_step(self, batch: tuple, batch_idx: int):
         src, _ = batch
+        # optimizers = self.optimizers()
+        # for param_group in optimizers.param_groups:
+        #     print("lr hererererere", param_group['lr'])
         _, loss = self.forward(batch)
         self.log("train/loss", loss, batch_size = src.size(1), sync_dist = True)
         return loss
@@ -343,7 +355,7 @@ class ExpEmbTx(pl.LightningModule):
                 if self.autoencoder:
                     equivalent = src_prefix == predicted_prefix
                 else:
-                    equivalent = src_prefix != predicted_prefix and self.are_equivalent(exp1=src_sp, exp2=predicted_sp, secs=10, start=25, end=75, n=3, tol=1e-10)
+                    equivalent = src_prefix != predicted_prefix and self.equiv(expr_pair=(src_sp, predicted_sp), start=25.0, end=75.0, n=3, tol=1e-10, secs=10)
                 if equivalent:
                     correct += 1
             except Exception as e:
@@ -372,7 +384,7 @@ class ExpEmbTx(pl.LightningModule):
                         if self.autoencoder:
                             equivalent = equivalent or (src_prefix == predicted_prefix)
                         else:
-                            equivalent = equivalent or (src_prefix != predicted_prefix and self.are_equivalent(exp1=src_spexp, exp2=predicted_spexp, secs=10, start=25, end=75, n=3, tol=1e-10))
+                            equivalent = equivalent or (src_prefix != predicted_prefix and self.equiv(expr_pair=(src_spexp, predicted_spexp), start=25.0, end=75.0, n=3, tol=1e-10, secs=10))
 
                         if equivalent:
                             break
@@ -599,37 +611,30 @@ class ExpEmbTx(pl.LightningModule):
         return _prefix_to_sympy(prefix)
 
 
-    def are_equivalent(
+    def equiv(
             self,
-            exp1,
-            exp2,
-            secs: int,
+            expr_pair: Tuple[Expr, Expr],
             start: float,
             end: float,
             n: int,
-            tol: float
-    ):
-        assert self.sympy_timeout > 0
-
-        @timeout(seconds=secs)
+            tol: float,
+            secs: int,
+    ) -> bool:
+        """
+        Args:
+            expr_pair: expr pair
+            start: domain start
+            end: domain end
+            n: # of test vals
+            tol: tolerance
+            secs: timeout secs
+        """
+        @timeout(secs=secs)
         def _simplify(expr: Expr) -> Expr:
             return sp.simplify(expr=expr)
 
-        # @timeout(seconds=secs)
-        # def _cont_domain(expr: Expr, symbol: Symbol):
-        #     return continuous_domain(
-        #         f=expr,
-        #         symbol=symbol,
-        #         domain=Interval(
-        #             start=0,
-        #             end=10,
-        #             left_open=True,
-        #             right_open=False,
-        #         )
-        #     )
-
-        @timeout(seconds=secs)
-        def _check_equiv(
+        @timeout(secs=secs)
+        def _equiv(
                 x: Symbol,
                 expr: Expr,
                 start: float,
@@ -642,42 +647,54 @@ class ExpEmbTx(pl.LightningModule):
                 val = expr.subs(x, num).evalf()
                 if abs(val) > tol:
                     return False
-
             return True
 
-        def _are_equivalent_sympy(exp1, exp2, n: int, tol: float) -> bool:
-            x = VARIABLES['x']
+        x = VARIABLES['x']
 
+        try:
+            src = _simplify(expr=src)
+            tgt = _simplify(expr=tgt)
+        except Exception as e:
+            print(
+                f"simplify exception {e}; {expr_pair[0]} & {expr_pair[1]}"
+            )
+            return False
+
+        expr = src - tgt
+
+        if expr == 0:
+            print(
+                f"simplify  , equiv    ; {expr_pair[0]} & {expr_pair[1]}"
+            )
+            return True
+        else:
             try:
-                expr_0 = _simplify(expr=exp1)
-                expr_1 = _simplify(expr=exp2)
-            except Exception as e:
-                print(f"[ERROR]: simplify exception {e}; {exp1} & {exp2}")
-                return False
-
-            expr = expr_0 - expr_1
-
-            if expr == 0:
-                print(f"[INFO]:  simplify  , equiv    ; {exp1} & {exp2}")
-                return True
-            else:
-                try:
-                    equiv = _check_equiv(
-                        x=x,
-                        expr=expr,
-                        start=start,
-                        end=end,
-                        n=n,
-                        tol=tol,
+                # TODO: SIMPLIFY THIS PART AFTER MAKING SURE IT WORKS
+                res = _equiv(
+                    x=x,
+                    expr=expr,
+                    start=start,
+                    end=end,
+                    n=n,
+                    tol=tol,
+                )
+                print(
+                    f"subs_evalf, equiv    ; {expr_pair[0]} & {expr_pair[1]}"
+                )
+                if res:
+                    print(
+                        f"subs_evalf, equiv    ; {expr_pair[0]} & {expr_pair[1]}"
                     )
-                    if equiv:
-                        print(f"[INFO]:  subs_evalf, equiv    ; {exp1} & {exp2}")
-                    else:
-                        print(f"[ERROR]: subs_evalf, non-equiv; {exp1} & {exp2}")
-                    return equiv
-                except Exception as e:
-                    print(f"[ERROR]: _check_equiv exception {e}; {exp1} & {exp2}")
-                    return False
+                else:
+                    print(
+                        f"subs_evalf, non-equiv; {expr_pair[0]} & {expr_pair[1]}"
+                    )
+                return res
+            except Exception as e:
+                print(
+                    f"_check_equiv exception {e}; {expr_pair[0]} & {expr_pair[1]}"
+                )
+                return False
 
         def _are_equivalent_bool(exp1, exp2):
             return not sp.logic.boolalg.simplify_logic(exp1 ^ exp2)

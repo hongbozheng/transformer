@@ -2,6 +2,7 @@ import os
 import wandb
 import torch
 import pytorch_lightning as pl
+from pytorch_lightning.callbacks import LearningRateMonitor
 from torch.utils.data import DataLoader
 from .data import ExpressionTupleDataset, ExpressionDataset, FileNameDataset
 from .model import ExpEmbTx, SemVecExpEmbTx
@@ -105,6 +106,8 @@ class TxTrainer:
     def get_callbacks(self):
         # Checkpointing callback
         callbacks = []
+        lr_monitor = LearningRateMonitor(logging_interval='step')
+        callbacks.append(lr_monitor)
         checkpoint_dir = os.path.join(self.outdir, "saved_models")
         checkpoint_callback = pl.callbacks.ModelCheckpoint(
             monitor = "val/accuracy",
