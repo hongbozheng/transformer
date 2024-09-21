@@ -64,10 +64,10 @@ def emb_algebra(embs: Tensor, exprs: List[str], filepath: str) -> None:
             pred = pred_indices[3]
 
         if pred == gt:
-            res_file.write(f"{expr[0]}\t{expr[1]}\t{expr[2]}\t{exprs[pred]}\n")
+            res_file.write(f"{expr[0]}\t{expr[1]}\t{expr[2]}\t{exprs[pred]}\t1\n")
             corrects += 1
         else:
-            res_file.write(f"{expr[0]}\t{expr[1]}\t{expr[2]}\t{exprs[pred]}\t[{exprs[gt]}]\n")
+            res_file.write(f"{expr[0]}\t{expr[1]}\t{expr[2]}\t{exprs[pred]}\t0\t[{exprs[gt]}]\n")
             incorrects += 1
 
     res_file.close()
