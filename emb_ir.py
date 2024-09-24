@@ -74,8 +74,9 @@ def main() -> None:
 
     args = parser.parse_args()
     ckpt_filepath = args.ckpt_filepath
-    filepath = args.filepath
     mode = args.mode
+    k = args.topk
+    filepath = args.filepath
 
     tokenizer = Tokenizer()
 
@@ -111,7 +112,7 @@ def main() -> None:
         mode=mode,
     )
 
-    emb_ir(embs=embs, gt=ir.gt, k=10)
+    emb_ir(embs=embs, gt=ir.gt, k=k)
 
     return
 
