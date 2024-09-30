@@ -129,8 +129,8 @@ def main() -> None:
 
     args = parser.parse_args()
     ckpt_filepath = args.ckpt_filepath
-    filepath = args.filepath
     mode = args.mode
+    filepath = args.filepath
     method = args.dim_red
 
     tokenizer = Tokenizer()
