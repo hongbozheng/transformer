@@ -42,7 +42,7 @@ def emb_plt(
         sememb_embs = tsne.fit_transform(X=sememb_embs)
 
     plt.rc(group="font", family="serif")
-    plt.rc(group="text", usetex=True)
+    plt.rc(group="text", usetex=False)
 
     classes = np.unique(ar=gt)
     colors = plt.cm.tab20.colors[:len(classes)]
@@ -57,13 +57,13 @@ def emb_plt(
     ]
 
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(25, 10))
-    for i, cls in enumerate(classes):
+    for cls in classes:
         id = cls == gt
         ax[0].scatter(
             x=eggemb_embs[id, 0],
             y=eggemb_embs[id, 1],
-            color=colors[i % len(colors)],
-            label=labels[i],
+            color=colors[cls],
+            label=labels[cls],
             s=5,
         )
     ax[0].set_xlabel('Component 1', fontsize=20)
@@ -74,13 +74,13 @@ def emb_plt(
     ax[0].spines["left"].set_visible(b=True)
     ax[0].spines["right"].set_visible(b=False)
 
-    for i, cls in enumerate(classes):
+    for cls in classes:
         id = cls == gt
         ax[1].scatter(
             x=sememb_embs[id, 0],
             y=sememb_embs[id, 1],
-            color=colors[i % len(colors)],
-            label=labels[i],
+            color=colors[cls],
+            label=labels[cls],
             s=5,
         )
     ax[1].set_xlabel('Component 1', fontsize=20)
