@@ -68,18 +68,40 @@ def emb_plt(method: str, embs: Tensor, perplexity: int, gt: List[int]) -> None:
         tsne = TSNE(n_components=2, perplexity=perplexity, random_state=SEED)
         embs = tsne.fit_transform(X=embs)
 
+    classes = np.unique(ar=gt)
+    # colors = ['#377eb8', '#ff7f00', '#4daf4a',
+    #           '#f781bf', '#a65628', '#984ea3',
+    #           '#999999', '#e41a1c', '#dede00',]
+    colors = plt.cm.tab20.colors[:len(classes)]
+    labels = [
+        "ln",
+        "sin", "cos", "tan",
+        "csc", "sec", "cot",
+        "asin", "acos", "atan",
+        "sinh", "cosh", "tanh",
+        "coth",
+        "asinh", "acosh", "atanh",
+    ]
+
     plt.rc(group="font", family="serif")
     plt.rc(group="text", usetex=False)
 
-    colors = ['#377eb8', '#ff7f00', '#4daf4a',
-              '#f781bf', '#a65628', '#984ea3',
-              '#999999', '#e41a1c', '#dede00',]
-
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(15, 10))
-    ax.scatter(x=embs[:, 0], y=embs[:, 1], c=gt, cmap="Spectral", s=5)
+    for i, cls in enumerate(classes):
+        id = cls == gt
+        ax.scatter(
+            x=embs[id, 0],
+            y=embs[id, 1],
+            color=colors[i % len(colors)],
+            label=labels[i],
+            s=5,
+        )
+    ax.set_xlabel('Component 1')
+    ax.set_ylabel('Component 2')
+
     ax.spines["top"].set_visible(b=False)
-    ax.spines["bottom"].set_visible(b=False)
-    ax.spines["left"].set_visible(b=False)
+    ax.spines["bottom"].set_visible(b=True)
+    ax.spines["left"].set_visible(b=True)
     ax.spines["right"].set_visible(b=False)
 
     plt.tight_layout()
