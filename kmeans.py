@@ -42,50 +42,50 @@ def emb_plt(
         sememb_embs = tsne.fit_transform(X=sememb_embs)
 
     plt.rc(group="font", family="serif")
-    plt.rc(group="text", usetex=False)
+    plt.rc(group="text", usetex=True)
 
     classes = np.unique(ar=gt)
     colors = plt.cm.tab20.colors[:len(classes)]
     labels = [
-        "ln",
-        "sin", "cos", "tan",
-        "csc", "sec", "cot",
-        "asin", "acos", "atan",
-        "sinh", "cosh", "tanh",
-        "coth",
-        "asinh", "acosh", "atanh",
+        r"$\ln x$",
+        r"$\sin x$", r"$\cos x$", r"$\tan x$",
+        r"$\csc x$", r"$\sec x$", r"$\cot x$",
+        r"$\sin^{-1} x$", r"$\cos^{-1} x$", r"$\tan^{-1} x$",
+        r"$\sinh x$", r"$\cosh x$", r"$\tanh x$",
+        r"$\coth x$",
+        r"$\sinh^{-1} x$", r"$\cosh^{-1} x$", r"$\tanh^{-1} x$",
     ]
 
     fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(25, 10))
-    for cls in classes:
+    for i, cls in enumerate(classes):
         id = cls == gt
         ax[0].scatter(
             x=eggemb_embs[id, 0],
             y=eggemb_embs[id, 1],
-            color=colors[cls],
-            label=labels[cls],
+            color=colors[i % len(colors)],
+            label=labels[i],
             s=5,
         )
-    ax[0].set_xlabel('Component 1', fontsize=20)
-    ax[0].set_ylabel('Component 2', fontsize=20)
-    ax[0].tick_params(axis='both', which='major', labelsize=20)
+    ax[0].set_xlabel('Component 1', fontsize=26, fontweight=2)
+    ax[0].set_ylabel('Component 2', fontsize=26, fontweight=2)
+    ax[0].tick_params(axis='both', which='major', labelsize=26)
     ax[0].spines["top"].set_visible(b=False)
     ax[0].spines["bottom"].set_visible(b=True)
     ax[0].spines["left"].set_visible(b=True)
     ax[0].spines["right"].set_visible(b=False)
 
-    for cls in classes:
+    for i, cls in enumerate(classes):
         id = cls == gt
         ax[1].scatter(
             x=sememb_embs[id, 0],
             y=sememb_embs[id, 1],
-            color=colors[cls],
-            label=labels[cls],
+            color=colors[i % len(colors)],
+            label=labels[i],
             s=5,
         )
-    ax[1].set_xlabel('Component 1', fontsize=20)
-    ax[1].set_ylabel('Component 2', fontsize=20)
-    ax[1].tick_params(axis='both', which='major', labelsize=20)
+    ax[1].set_xlabel('Component 1', fontsize=26, fontweight=2)
+    ax[1].set_ylabel('Component 2', fontsize=26, fontweight=2)
+    ax[1].tick_params(axis='both', which='major', labelsize=26)
     ax[1].spines["top"].set_visible(b=False)
     ax[1].spines["bottom"].set_visible(b=True)
     ax[1].spines["left"].set_visible(b=True)
@@ -98,7 +98,7 @@ def emb_plt(
             color=color,
             lw=0,
             marker='s',
-            markersize=18,
+            markersize=24,
         ) for color in colors
     ]
 
@@ -107,16 +107,16 @@ def emb_plt(
         handles=legend,
         labels=labels,
         loc=8,
-        ncols=17,
-        fontsize=22,
+        ncols=9,
+        fontsize=28,
         frameon=False,
         handletextpad=0.1,
         # borderaxespad=0.1,
-        columnspacing=0.7,
+        columnspacing=0.8,
 
     )
 
-    plt.tight_layout(rect=[0, 0.075, 1, 1])
+    plt.tight_layout(rect=[0, 0.150 , 1, 1])
     plt.savefig(f"{method}.svg", transparent=True, dpi=500, format="svg")
     # plt.savefig(f"{method}.png", transparent=False, dpi=100)
 
