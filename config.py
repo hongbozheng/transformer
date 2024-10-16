@@ -84,7 +84,7 @@ _C.KMEANS.RANDOM_STATE = SEED
 _C.DIM_RED = CN()
 
 """ UMAP & t-SNE """
-_C.DIM_RED.PERPLEXITY = 30
+_C.DIM_RED.PERPLEXITY = 30  # ir: 25
 
 
 def get_config(args):
