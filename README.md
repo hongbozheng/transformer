@@ -1,4 +1,5 @@
 # E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
+# seq2seq Model
 
 ## Dataset
 #### Dataset Creation
@@ -32,10 +33,11 @@ To train seq2seq transformer model
 ./train_tx.py
 ```
 To train transformer encoder with contrastive learning,
-checkout the `cl` branch and follow the instructions in `README.md`
+checkout the `cl` branch
 ```
 git checkout cl
 ```
+Follow the instructions in `README.md`
 
 ## Model
 #### Trained model
