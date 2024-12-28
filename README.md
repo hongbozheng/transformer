@@ -1,5 +1,6 @@
 # E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
-# Transformer Encoder with Contrastive Learning
+
+## Transformer Encoder with Contrastive Learning
 
 ## Dataset
 #### Dataset Creation
