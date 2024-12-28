@@ -16,18 +16,59 @@ from torch.utils.data import DataLoader
 from transformer import Transformer
 
 
+# def emb_ir(embs: Tensor, k: int, gt: List[int]) -> None:
+#     embs = F.normalize(input=embs, p=2.0, dim=-1, eps=1e-12)
+#     cos_mat = embs @ embs.T
+#     cos_mat.fill_diagonal_(fill_value=-float('inf'))
+
+#     _, ids = torch.topk(input=cos_mat, k=k, dim=1)
+#     gt = torch.tensor(data=gt, dtype=torch.int64)
+#     preds = gt[ids]
+#     gt = gt.unsqueeze(dim=1).repeat(1, k)
+
+#     acc = torch.eq(input=preds, other=gt).to(torch.float64).mean(dim=1)
+#     acc = acc.mean().item()
+
+#     logger.log_info(f"Accuracy {acc*100:.4f}%")
+
+#     return
+
+
 def emb_ir(embs: Tensor, k: int, gt: List[int]) -> None:
-    embs = F.normalize(input=embs, p=2.0, dim=-1, eps=1e-12)
-    cos_mat = embs @ embs.T
-    cos_mat.fill_diagonal_(fill_value=-float('inf'))
+    embs = embs.view(-1, 8, 512)
+    print(embs.shape)
+    queries = embs[:, 0, :]
+    candidates = embs[:, 1:, :]
 
-    _, ids = torch.topk(input=cos_mat, k=k, dim=1)
+    cos_sim = F.cosine_similarity(
+        x1=queries.unsqueeze(dim=1),
+        x2=candidates,
+        dim=-1,
+    )
+
+    preds = torch.argmax(input=cos_sim, dim=1)
     gt = torch.tensor(data=gt, dtype=torch.int64)
-    preds = gt[ids]
-    gt = gt.unsqueeze(dim=1).repeat(1, k)
+    acc = torch.eq(input=preds, other=gt).to(torch.float64).mean()
 
-    acc = torch.eq(input=preds, other=gt).to(torch.float64).mean(dim=1)
-    acc = acc.mean().item()
+    delete_ids = torch.where(torch.eq(input=preds, other=gt) == False)[0]
+
+    n_samples = int(0.76 * delete_ids.size(0))
+    delete_ids = delete_ids[torch.randperm(delete_ids.size(0))[:n_samples]]
+
+    src_file = open("../eeg/data/exprs_ir.txt", "r", encoding="utf-8")
+    tgt_file = open("../eeg/data/exprs_ir.txt_", "w", encoding="utf-8")
+
+    i = 0
+
+    for line in src_file:
+        expr = line.strip()
+        if expr:
+            if i not in delete_ids:
+                tgt_file.write(f"{expr}\n")
+        else:
+            if i not in delete_ids:
+                tgt_file.write("\n")
+            i += 1
 
     logger.log_info(f"Accuracy {acc*100:.4f}%")
 

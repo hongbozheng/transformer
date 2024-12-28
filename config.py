@@ -14,7 +14,7 @@ _C.BASE = ['']
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
 
-""" =============== Transformer =============== """
+""" Transformer """
 _C.MODEL.TX = CN()
 _C.MODEL.TX.EMB_DIM = 512
 # _C.MODEL.TX.SRC_VOCAB_SIZE = len(tokenizer.components)

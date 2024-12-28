@@ -1,55 +1,85 @@
 # Embedding Algebra & Embedding K-means Clustering
 
 ## Model
-#### Trained model
-Place trained model(s) in `models` folder.
+#### Saved model
+Saved model(s) should be in `models` directory.
+
+## Configuration
+To modify configuration, check `config.py` file.
+
+## K-Means Clustering
+K-Means clustering evaluation on groups of equivalent mathematical expressions.
+
+Check command line input help.
+```
+./k-means.py -h
+```
+Perform evaluation.
+```
+./k-means.py -m <ckpt> -e <emb mode> -f <filepath> -d <dim red>
+```
+- `<ckpt>` - model checkpoint filepath
+- `<emb mode>` - embedding mode
+  - mean - average pooling
+  - max - max pooling
+- `<filepath>` - test filepath
+- `<dim red> (optional)` - dimensionality reduction method
+  - t-SNE
+  - UMAP
+
+## Formula Selection
+Select the equivalent expression from a group of 7 expressions
+(1 equivalent and 6 distractors). 1 equivalent to query,
+3 in-equivalent but syntactically similar to the query, and 
+3 in-equivalent but syntactically similar to the correct answer.
+
+Check command line input help.
+```
+./formula_select.py -h
+```
+Perform evaluation.
+```
+./formula_select.py -m <ckpt> -e <emb mode> -k <top-k> -f <filepath>
+```
+- `<ckpt>` - model checkpoint filepath
+- `<emb mode>` - embedding mode
+  - mean - average pooling
+  - max - max pooling
+- `<top-k>` - top-k expressions to select
+- `<filepath>` - test filepath
+
+## Mistake Detection
+Find mistake(s) from a sequence of mathematical derivations.
+
+Check command line input help.
+```
+./mistake_detect.py -h
+```
+Perform evaluation.
+```
+./mistake_detect.py -m <ckpt> -e <emb mode> -f <filepath>
+```
+- `<ckpt>` - model checkpoint filepath
+- `<emb mode>` - embedding mode
+  - mean - average pooling
+  - max - max pooling
+- `<filepath>` - test filepath
 
 ## Embedding Algebra
-#### Inference configuration
-To modify inference configuration, check `config.py` file.
+Select the best expression from a pool of expressions based on a given pair of 
+mathematical expressions and a given expression.
 
-#### Embedding Algebra Evaluation
-Check command line input help
+Check command line input help.
 ```
 ./emb_algebra.py -h
 ```
-
-Perform embedding algebra evaluation on quadruple (2-pair) of mathematical expressions
+Perform evaluation.
 ```
-./emb_algebra.py -p <pool_filepath> -f <filepath>
+./emb_algebra.py -m <ckpt> -e <emb mode> -p <pool> -f <filepath>
 ```
-- `<pool_filepath>` - expression pool filepath
-- `<filepath>` - evaluation filepath
-
-## Embedding K-means Clustering
-#### Inference configuration
-To modify inference configuration, check `config.py` file.
-
-#### K-means Clustering Evaluation
-Check command line input help
-```
-./emb_cluster.py -h
-```
-
-Perform K-Means clustering evaluation on groups of equivalent mathematical expressions
-```
-./emb_cluster.py -f <filepath> -m <method>
-```
-- `<filepath>` - evaluation filepath
-- `<method>` - dimension reduction method
-
-## Embedding Information Retrieval
-#### Inference configuration
-To modify inference configuration, check `config.py` file.
-
-#### Information Retrieval Evaluation
-Check command line input help
-```
-./emb_ir.py -h
-```
-
-Perform information retrieval evaluation on 1 query and 5 candidates (6 expressions in total)
-```
-./emb_ir.py -f <filepath>
-```
-- `<filepath>` - evaluation filepath
+- `<ckpt>` - model checkpoint filepath
+- `<emb mode>` - embedding mode
+  - mean - average pooling
+  - max - max pooling
+- `<pool>` - expression pool to select from
+- `<filepath>` - test filepath
