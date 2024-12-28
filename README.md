@@ -14,7 +14,7 @@ git checkout dataset
 Follow the instructions in `README.md` to properly create the `dataset` and
 `train` & `test` splits.
 
-Make sure to `copy` the `data` folder under the
+Make sure to `copy` the `data` directory under the
 [E-Gen](https://github.com/hongbozheng/E-Gen)
 repository to this repository.
 ```
@@ -41,7 +41,7 @@ Follow the instructions in `README.md`.
 
 ## Model
 #### Saved model
-Saved seq2seq transformer model will be in `models` folder.
+Saved seq2seq transformer model will be in `models` directory.
 
 ## Test
 #### Test Configuration
