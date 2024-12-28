@@ -1,5 +1,6 @@
 # E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
-# Seq2seq Transformer Model
+
+## Seq2seq Transformer Model
 
 ## Dataset
 #### Dataset Creation
