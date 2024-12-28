@@ -14,7 +14,7 @@ git checkout dataset
 Follow the instructions in `README.md` to properly create the `dataset` and
 `train` & `test` splits.
 
-Make sure to `copy` the `data` folder under the
+Make sure to `copy` the `data` directory under the
 [E-Gen](https://github.com/hongbozheng/E-Gen)
 repository to this repository.
 ```
@@ -35,7 +35,7 @@ To train transformer encoder with contrastive learning.
 
 ## Model
 #### Saved model
-Saved transformer encoder will be in `models` folder.
+Saved transformer encoder will be in `models` directory.
 
 ## Test
 To test transformer encoder, checkout `expt` branch.
