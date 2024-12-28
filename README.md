@@ -1,5 +1,5 @@
 # E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
-# Contrastive Learning
+# Transformer Encoder with Contrastive Learning
 
 ## Dataset
 #### Dataset Creation
@@ -21,11 +21,11 @@ repository to this repository.
 cp /path/to/eeg/data/directory ./
 ```
 - Train data: `data/expr_triplets.txt`
-- Test data: `data/exprs_val.txt`
+- Test data: `data/exprs_cl.txt`
 
-## Train contrastive learning model
+## Train transformer encoder with contrastive learning
 #### Train Configuration
-To modify training configuration, check `config.py` file.
+To modify train configuration, check `config.py` file.
 
 #### Train
 To train transformer encoder with contrastive learning.
@@ -35,10 +35,10 @@ To train transformer encoder with contrastive learning.
 
 ## Model
 #### Saved model
-Saved model will be in `models` folder.
+Saved transformer encoder will be in `models` folder.
 
 ## Test
-To test contrastive learning models, checkout `expt` branch.
+To test transformer encoder, checkout `expt` branch.
 ```
 git checkout expt
 ```
