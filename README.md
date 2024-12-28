@@ -1,26 +1,26 @@
-# Semantic Representations of Mathematical Expressions in a Continuous Vector Space
+# E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
 
 ## Dataset
 #### Dataset Creation
-Clone the [Equivalent Expressions Generation](https://gitlab.engr.illinois.edu/hongboz2/equivalent_expression_generation) repository
+Clone the [E-Gen](https://github.com/hongbozheng/E-Gen) repository
 ```
-git clone https://gitlab.engr.illinois.edu/hongboz2/equivalent_expression_generation.git eeg
+git clone git@github.com:hongbozheng/E-Gen.git e-gen
 ```
 Checkout `dataset` branch
 ```
 git checkout dataset
 ```
-Follow the instructions in `README.md` to properly create the `dataset` and `train`,
-`validation`, `test` splits.
+Follow the instructions in `README.md` to properly create the `dataset` and
+`train` & `test` splits.
 
 Make sure to `copy` the `data` folder under the
-[Equivalent Expressions Generation](https://gitlab.engr.illinois.edu/hongboz2/equivalent_expression_generation)
+[E-Gen](https://github.com/hongbozheng/E-Gen)
 repository to this repository.
 ```
-cp ../path/to/eeg/data/folder ./
+cp /path/to/eeg/data/directory ./
 ```
-* Training data: `data/expr_pairs.txt`
-* Validation data: `data/exprs_val.txt`
+- Train data: `data/expr_pairs.txt`
+- Test data: `data/exprs_val.txt`
 
 ## Training
 #### Training Configuration
@@ -31,7 +31,16 @@ To train seq2seq transformer model
 ```
 ./train_tx.py
 ```
+To train transformer encoder with contrastive learning,
+checkout the `cl` branch and follow the instructions in `README.md`
+```
+git checkout cl
+```
 
 ## Model
 #### Trained model
-Trained model will be in `models` folder
+Trained model will be in `models` folder.
+
+## Testing
+#### Testing Configuration
+To modify testing configuration, check `config.py` file.
