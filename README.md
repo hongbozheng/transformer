@@ -1,4 +1,6 @@
-# Embedding Algebra & Embedding K-means Clustering
+# E-Gen: Leveraging E-Graphs to Improve Continuous Representations of Symbolic Expressions
+
+## Expriments
 
 ## Model
 #### Saved model
