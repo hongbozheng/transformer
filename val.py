@@ -8,9 +8,9 @@ import sympy as sp
 import torch
 import torch.nn as nn
 from avg_meter import AverageMeter
-from components import VARIABLES
+from convert import prefix_to_sympy
 from logger import timestamp
-from refactor import prefix_to_sympy
+from notation import VARIABLES
 from sympy import Expr, Symbol
 from timeout import timeout
 from tokenizer import Tokenizer

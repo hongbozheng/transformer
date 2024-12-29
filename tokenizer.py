@@ -1,13 +1,13 @@
 from torch import Tensor
 
 import torch
-from components import CONSTANTS, SPECIAL_WORDS, SYMBOLS, VARIABLES, \
+from notation import CONSTANTS, SPECIAL_WORDS, SYMBOLS, VARIABLES, \
     OPERATORS, SYMPY_OPERATORS
 
 
 class Tokenizer:
     def __init__(self) -> None:
-        """Tokenize Components in components.py"""
+        """Tokenize Components in notation.py"""
         self.special_words = SPECIAL_WORDS
         self.constants = CONSTANTS
         self.symbols = SYMBOLS

@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 
 import sympy as sp
-from components import CONSTANTS, VARIABLES, OPERATORS, COEFFICIENTS
+from notation import CONSTANTS, VARIABLES, OPERATORS, COEFFICIENTS
 from sympy import Expr
 
 
