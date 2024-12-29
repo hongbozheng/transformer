@@ -3,7 +3,7 @@
 ## Seq2seq Transformer Model
 
 ## Dataset
-#### Dataset Creation
+### Dataset Creation
 Clone the [E-Gen](https://github.com/hongbozheng/E-Gen) repository.
 ```
 git clone git@github.com:hongbozheng/E-Gen.git e-gen
@@ -25,10 +25,10 @@ cp /path/to/eeg/data/directory ./
 - Test data: `data/exprs_val.txt`
 
 ## Train seq2seq transformer model
-#### Train Configuration
+### Train Configuration
 To modify train configuration, check `config.py` file.
 
-#### Train
+### Train
 To train seq2seq transformer model.
 ```
 ./train_tx.py
@@ -41,14 +41,14 @@ git checkout cl
 Follow the instructions in `README.md`.
 
 ## Model
-#### Saved model
+### Saved model
 Saved seq2seq transformer model will be in `models` directory.
 
 ## Test
-#### Test Configuration
+### Test Configuration
 To modify test configuration, check `config.py` file.
 
-#### Test
+### Test
 To test seq2seq transformer model.
 ```
 ./test_tx.py
