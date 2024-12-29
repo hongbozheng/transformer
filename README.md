@@ -3,7 +3,7 @@
 ## Transformer Encoder with Contrastive Learning
 
 ## Dataset
-#### Dataset Creation
+### Dataset Creation
 Clone the [E-Gen](https://github.com/hongbozheng/E-Gen) repository.
 ```
 git clone git@github.com:hongbozheng/E-Gen.git e-gen
@@ -25,17 +25,17 @@ cp /path/to/eeg/data/directory ./
 - Test data: `data/exprs_cl.txt`
 
 ## Train transformer encoder with contrastive learning
-#### Train Configuration
+### Train Configuration
 To modify train configuration, check `config.py` file.
 
-#### Train
+### Train
 To train transformer encoder with contrastive learning.
 ```
 ./train_tx.py
 ```
 
 ## Model
-#### Saved model
+### Saved model
 Saved transformer encoder will be in `models` directory.
 
 ## Test
