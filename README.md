@@ -19,7 +19,7 @@ Make sure to `copy` the `data` directory under the
 [E-Gen](https://github.com/hongbozheng/E-Gen)
 repository to this repository.
 ```
-cp /path/to/eeg/data/directory ./
+cp /path/to/e-gen/data/directory ./
 ```
 - Train data: `data/expr_pairs.txt`
 - Test data: `data/exprs_val.txt`
