@@ -26,12 +26,9 @@ def emb_deri(
     preds = []
     start = 0
 
-    i = 1
     cos_sims = []
-    indices = []
 
     for size in deri_sizes:
-        indices.append(i)
         emb = embs[start:start+size]
         cos_sim = F.cosine_similarity(
             x1=emb[1:],
@@ -46,25 +43,10 @@ def emb_deri(
         pred = torch.lt(input=cos_sim, other=0.956826).to(dtype=torch.int64)
         preds.append(pred)
         start += size
-        i += size+1
-
-    # print(preds)
-    # print(len(gt))
-    # print(preds.size())
-    # exit()
 
     preds = torch.cat(tensors=preds, dim=0).to(dtype=torch.int64)
     gt = torch.tensor(data=gt, dtype=torch.int64)
     corrects = torch.eq(input=preds, other=gt).sum().item()
-
-    deletes = []
-    for i, cos in zip(indices, cos_sims):
-        # if torch.sum((cos >= 0.95) & (cos < 0.96)) >= 2 or torch.all(cos >= 0.97):
-        l = cos.size()[0]
-        # if torch.sum((cos <= 0.90)) <= 2 and torch.sum((cos >= 0.964164)) >= l:
-        if torch.sum((cos < 0.9633)) >= 3:
-            deletes.append(i)
-            # print(i, cos)
 
     logger.log_info(f"Accuracy {corrects/gt.size(dim=0)*100:.4f}%")
 
@@ -76,28 +58,6 @@ def emb_deri(
         digits=4,
     )
     print(cr)
-
-    # file = open("../eeg/data/expr_deri.txt", 'r')
-    # resfile = open("../eeg/data/expr_deri.txt_", 'w')
-
-    # exprs = []
-    # rm = True
-    # for i, line in enumerate(file):
-    #     if i+1 in deletes:
-    #         rm = False
-    #     expr = line.strip()
-    #     if expr:
-    #         exprs.append(expr)
-    #     else:
-    #         if rm:
-    #             for expr in exprs:
-    #                 resfile.write(f"{expr}\n")
-    #             resfile.write('\n')
-    #         rm = True
-    #         exprs = []
-
-    # file.close()
-    # resfile.close()
 
     return
 
