@@ -163,9 +163,9 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.dim = dim
         self.n_heads = n_heads
-        assert self.emb_dim % self.n_heads == 0, (
+        assert self.dim % self.n_heads == 0, (
             logger.log_error(
-                f"{self.emb_dim} is not divisible by {self.n_heads}"
+                f"{self.dim} is not divisible by {self.n_heads}"
             )
         )
 
@@ -199,26 +199,28 @@ class MultiHeadAttention(nn.Module):
             v: Tensor,
             mask: Optional[Tensor] = None,
     ) -> Tensor:
-        # [B, L, D]
-        batch_size, seq_len, _ = q.shape
-        # [B, L, D] -> [B, L, H * D_H]
+        # [B, L_Q, D] -> [B, L_Q, H * D_H]
         q = self.wq(q)
-        # [B, L, D] -> [B, L, H * D_H]
+        # [B, L_K, D] -> [B, L_K, H * D_H]
         k = self.wk(k)
-        # [B, L, D] -> [B, L, H * D_H]
+        # [B, L_V, D] -> [B, L_V, H * D_H]
         v = self.wv(v)
 
-        # [B, L, H * D_H] -> [B, S, H, D_H]
-        q = q.view(batch_size, seq_len, self.n_heads, self.head_dim)
-        k = k.view(batch_size, seq_len, self.n_heads, self.head_dim)
-        v = v.view(batch_size, seq_len, self.n_heads, self.head_dim)
+        # [B, L_Q, H * D_H] -> [B, L_Q, H, D_H]
+        q = q.view(q.size(dim=0), q.size(dim=1), self.n_heads, self.head_dim)
+        # [B, L_K, H * D_H] -> [B, L_K, H, D_H]
+        k = k.view(k.size(dim=0), k.size(dim=1), self.n_heads, self.head_dim)
+        # [B, L_V, H * D_H] -> [B, L_V, H, D_H]
+        v = v.view(v.size(dim=0), v.size(dim=1), self.n_heads, self.head_dim)
 
-        # [B, L, H, D_H] -> [B, H, L, D_H]
+        # [B, L_Q, H, D_H] -> [B, H, L_Q, D_H]
         q = q.transpose(dim0=1, dim1=2)
+        # [B, L_K, H, D_H] -> [B, H, L_K, D_H]
         k = k.transpose(dim0=1, dim1=2)
+        # [B, L_V, H, D_H] -> [B, H, L_V, D_H]
         v = v.transpose(dim0=1, dim1=2)
 
-        # [B, H, L, D_H] @ [B, H, D_H, L] -> [B, H, L, L]
+        # [B, H, L_Q, D_H] @ [B, H, D_H, L_K] -> [B, H, L_Q, L_K]
         scores = q @ k.transpose(dim0=-2, dim1=-1) / math.sqrt(self.head_dim)
         if mask is not None:
             scores.masked_fill(mask=mask, value=float('-inf'))
@@ -227,14 +229,14 @@ class MultiHeadAttention(nn.Module):
         if self.dropout is not None:
             scores = self.dropout(scores)
 
-        # [B, H, L, L] @ [B, H, L, D_H] -> [B, H, L, D_H]
+        # [B, H, L_Q, L_K] @ [B, H, L_K, D_H] -> [B, H, L_Q, D_H]
         output = scores @ v
 
-        # [B, H, L, D_H] -> [B, L, H, D_H] -> [B, L, D]
+        # [B, H, L_Q, D_H] -> [B, L_Q, H, D_H] -> [B, L_Q, D]
         output = output.transpose(dim0=1, dim1=2).contiguous()\
-            .view(batch_size, seq_len, -1)
+            .view(output.size(dim=0), -1, self.n_heads * self.head_dim)
 
-        # [B, L, D] -> [B, L, D]
+        # [B, L_Q, D] -> [B, L_Q, D]
         output = self.wo(output)
 
         return output
@@ -531,7 +533,7 @@ class Transformer(nn.Module):
         """
         Args:
             x: target tensor
-            memory: encoder output
+            mem: encoder output
             tgt_mask: target mask
             mem_mask: source mask
         Returns:

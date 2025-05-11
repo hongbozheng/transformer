@@ -28,16 +28,16 @@ def greedy_decode(
 ) -> Tensor:
     batch_size = src.size(dim=0)
 
-    memory = model.encode(x=src, mask=src_mask)
+    mem = model.encode(x=src, mask=src_mask)
 
-    # [batch, 1] of "SOE"
+    # [B, 1] of "SOE"
     tgt = torch.full(
         size=(batch_size, 1),
         fill_value=tokenizer.comp2idx["SOE"],
         dtype=torch.int64,
         device=device,
     )
-    # [batch_size, 1]
+    # [B, 1]
     done = torch.zeros(
         size=(batch_size, 1),
         dtype=torch.bool,
@@ -45,16 +45,15 @@ def greedy_decode(
     )
 
     for i in range(seq_len-1):
-        tgt_mask = torch.tril(
+        tgt_mask = torch.triu(
             input=torch.ones(
                 size=(batch_size, 1, tgt.size(dim=1), tgt.size(dim=1))
             ),
-            diagonal=0,
-        ).to(dtype=torch.uint8).to(device=device)
-        #print(tgt_mask, tgt_mask.size())
+            diagonal=1,
+        ).to(dtype=torch.bool).to(device=device)
         logits = model.decode(
             x=tgt,
-            memory=memory,
+            mem=mem,
             tgt_mask=tgt_mask,
             mem_mask=src_mask,
         )

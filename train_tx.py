@@ -39,7 +39,10 @@ def main() -> None:
     # for batch in train_loader:
     #     print(batch["src"], batch["src"].shape)
     #     print(batch["tgt"], batch["tgt"].shape)
+    #     print(batch["src_mask"])
+    #     print(batch["tgt_mask"])
     #     break
+    # return
     val_loader = DataLoader(
         dataset=val_dataset,
         batch_size=cfg.LOADER.VAL.BATCH_SIZE,

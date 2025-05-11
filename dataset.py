@@ -49,8 +49,8 @@ class EquivExpr(Dataset):
         )
         # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
         # [batch_size, n_heads, 1, seq_len]
-        src_mask = torch.ne(input=src, other=self.tokenizer.comp2idx["PAD"]) \
-            .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.uint8)
+        src_mask = torch.eq(input=src, other=self.tokenizer.comp2idx["PAD"]) \
+            .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
 
         if not self.val:
             tgt = [item['tgt'] for item in batch]
@@ -60,18 +60,18 @@ class EquivExpr(Dataset):
                 padding_value=self.tokenizer.comp2idx["PAD"],
             )
             # don't need to feed last token, so -1
-            tgt_mask = torch.tril(
+            tgt_mask = torch.triu(
                 input=torch.ones(
                     size=(tgt.size(dim=0), 1, tgt.size(dim=1) - 1,
                           tgt.size(dim=1) - 1)
                 ),
-                diagonal=0,
-            ).to(dtype=torch.uint8)
-            tgt_pad_mask = torch.ne(
+                diagonal=1,
+            ).to(dtype=torch.bool)
+            tgt_pad_mask = torch.eq(
                 input=tgt[:, :-1],
                 other=self.tokenizer.comp2idx["PAD"]
-            ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.uint8)
-            tgt_mask &= tgt_pad_mask
+            ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
+            tgt_mask |= tgt_pad_mask
 
             '''
             print(tgt)
