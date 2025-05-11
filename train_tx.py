@@ -50,7 +50,7 @@ def main() -> None:
     )
 
     model = Transformer(
-        emb_dim=cfg.MODEL.TX.EMB_DIM,
+        dim=cfg.MODEL.TX.DIM,
         src_vocab_size=len(tokenizer.components),
         tgt_vocab_size=len(tokenizer.components),
         src_seq_len=cfg.MODEL.TX.SRC_SEQ_LEN,
