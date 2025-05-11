@@ -38,7 +38,7 @@ def train_epoch(
         src_mask[:, 0] = 0
         last_1 = src_mask.sum(dim=1)
         src_mask[torch.arange(src_mask.size(dim=0)), last_1] = 0
-        embs[src_mask==0] = float("-inf")
+        embs[src_mask==1] = float("-inf")
         # print(embs)
         # print(embs.size())
         embs, _ = embs.max(dim=1, keepdim=False)

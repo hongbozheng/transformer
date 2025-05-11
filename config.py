@@ -16,7 +16,7 @@ _C.MODEL = CN()
 
 """ Transformer """
 _C.MODEL.TX = CN()
-_C.MODEL.TX.EMB_DIM = 512
+_C.MODEL.TX.DIM = 512
 # _C.MODEL.TX.SRC_VOCAB_SIZE = len(tokenizer.components)
 # _C.MODEL.TX.TGT_VOCAB_SIZE = len(tokenizer.components)
 _C.MODEL.TX.SRC_SEQ_LEN = 200
