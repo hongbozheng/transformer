@@ -9,7 +9,7 @@ import torch.nn as nn
 from avg_meter import AverageMeter
 from convert import prefix_to_sympy
 from logger import timestamp
-from notation import VARIABLES
+from vocab import VARIABLES
 from sympy import Expr, Symbol
 from timeout import timeout
 from tokenizer import Tokenizer

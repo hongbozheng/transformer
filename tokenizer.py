@@ -1,7 +1,7 @@
 from torch import Tensor
 
 import torch
-from notation import CONSTANTS, VARIABLES, OPERATORS, SYMPY_OPERATORS
+from vocab import CONSTANTS, VARIABLES, OPERATORS, SYMPY_OPERATORS
 
 
 class Tokenizer:

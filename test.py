@@ -228,7 +228,7 @@ def test_model(
         test_loader: DataLoader,
         seq_len: int,
         tokenizer: Tokenizer,
-):
+) -> None:
     model.to(device=device)
     model.eval()
 
@@ -267,4 +267,3 @@ def test_model(
                 refresh=True,
             )
             print(f"{acc_meter.avg:.6f}")
-    return

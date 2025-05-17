@@ -287,7 +287,6 @@ class Encoder(nn.Module):
         super().__init__()
         self.layers = layers
         self.norm = LayerNorm(features=dim, eps=1e-6)
-        return
 
     def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         for layer in self.layers:
@@ -366,7 +365,6 @@ class Decoder(nn.Module):
         super().__init__()
         self.layers = layers
         self.norm = LayerNorm(features=dim, eps=1e-6)
-        return
 
     def forward(
             self,
@@ -390,7 +388,6 @@ class Projection(nn.Module):
     def __init__(self, dim: int, vocab_size: int) -> None:
         super().__init__()
         self.proj = nn.Linear(in_features=dim, out_features=vocab_size)
-        return
 
     def forward(self, x: Tensor) -> Tensor:
         # [B, L, vocab_size] -> [B, L, vocab_size]
@@ -508,7 +505,6 @@ class Transformer(nn.Module):
         for p in self.parameters():
             if p.dim() > 1:
                 nn.init.xavier_uniform_(tensor=p)
-        return
 
     def encode(self, x: Tensor, mask: Tensor) -> Tensor:
         """

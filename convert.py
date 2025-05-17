@@ -1,5 +1,5 @@
 import sympy as sp
-from notation import CONSTANTS, VARIABLES, OPERATORS, COEFFICIENTS
+from vocab import CONSTANTS, VARIABLES, OPERATORS, COEFFICIENTS
 from sympy import Expr
 
 
