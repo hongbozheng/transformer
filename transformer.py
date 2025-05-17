@@ -5,7 +5,7 @@ Reference: https://pytorch.org/tutorials/beginner/translation_transformer.html
 
 
 from torch import Tensor
-from typing import Optional, Tuple
+from typing import Optional
 
 import logger
 import math

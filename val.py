@@ -1,5 +1,4 @@
 from torch import Tensor
-from typing import Tuple
 
 from config import START, END, N, TOL, SECS
 import logger
@@ -33,7 +32,7 @@ def greedy_decode(
     # [B, 1] of "SOE"
     tgt = torch.full(
         size=(batch_size, 1),
-        fill_value=tokenizer.comp2idx["SOE"],
+        fill_value=tokenizer.sym2idx["SOE"],
         dtype=torch.int64,
         device=device,
     )
@@ -67,7 +66,7 @@ def greedy_decode(
         #print("tgt")
         #print(tgt, tgt.size())
 
-        done |= (nxt_tokens == tokenizer.comp2idx["EOE"])
+        done |= (nxt_tokens == tokenizer.sym2idx["EOE"])
         #print("done", done)
 
         if done.all():
@@ -77,7 +76,7 @@ def greedy_decode(
 
 
 def equiv(
-        expr_pair: Tuple[str, str],
+        expr_pair: tuple[str, str],
         start: float,
         end: float,
         n: int,

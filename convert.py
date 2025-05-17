@@ -1,11 +1,9 @@
-from typing import Dict, List, Tuple
-
 import sympy as sp
 from notation import CONSTANTS, VARIABLES, OPERATORS, COEFFICIENTS
 from sympy import Expr
 
 
-def write_infix(token: str, args: List) -> str:
+def write_infix(token: str, args: list) -> str:
     """
     Infix representation.
     Convert prefix expressions to a format that SymPy can parse.
@@ -68,7 +66,7 @@ def write_infix(token: str, args: List) -> str:
         return token
 
 
-def parse_int(lst: List) -> Tuple[int, int]:
+def parse_int(lst: list) -> tuple[int, int]:
     """
     Parse a list that starts with an integer.
     Return the integer value, and the position it ends in the list.
@@ -94,7 +92,7 @@ def parse_int(lst: List) -> Tuple[int, int]:
     return val, i + 1
 
 
-def prefix_to_infix(tokens: List[str]) -> Tuple[str, List[str]]:
+def prefix_to_infix(tokens: list[str]) -> tuple[str, list[str]]:
     """
     Parse an expression in prefix mode, and output it in either:
         - infix mode (returns human readable string)
@@ -122,7 +120,7 @@ def prefix_to_infix(tokens: List[str]) -> Tuple[str, List[str]]:
         return str(val), tokens[i:]
 
 
-def get_sympy_local_dict() -> Dict:
+def get_sympy_local_dict() -> dict:
     local_dict = {}
     for k, v in list(VARIABLES.items()) + list(COEFFICIENTS.items()):
         assert k not in local_dict

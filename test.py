@@ -31,7 +31,7 @@ def beam_search(
     # [batch, 1] of "SOE"
     beam = torch.full(
         size=(batch_size, 1),
-        fill_value=tokenizer.comp2idx["SOE"],
+        fill_value=tokenizer.sym2idx["SOE"],
         dtype=torch.int64,
         device=device,
     )
@@ -176,7 +176,7 @@ def beam_search(
         # scores = nxt_scores
         # beam = new_beam
 
-        done |= (nxt_tokens == tokenizer.comp2idx["EOE"])
+        done |= (nxt_tokens == tokenizer.sym2idx["EOE"])
         print(done)
 
         if done.all():

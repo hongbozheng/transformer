@@ -1,5 +1,4 @@
 from torch import Tensor
-from typing import Dict, List
 
 import torch
 from tokenizer import Tokenizer
@@ -24,12 +23,11 @@ class EquivExpr(Dataset):
                 expr = line.strip()
                 self.exprs.append(expr)
         file.close()
-        return
 
     def __len__(self) -> int:
         return len(self.exprs)
 
-    def __getitem__(self, idx: int) -> Dict[str, Tensor]:
+    def __getitem__(self, idx: int) -> dict[str, Tensor]:
         expr = self.exprs[idx]
 
         if not self.val:
@@ -40,16 +38,16 @@ class EquivExpr(Dataset):
             src_tokens = self.tokenizer.encode(expr=expr)
             return {"src": src_tokens}
 
-    def collate_fn(self, batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
+    def collate_fn(self, batch: list[dict[str, Tensor]]) -> dict[str, Tensor]:
         src = [item['src'] for item in batch]
         src = pad_sequence(
             sequences=src,
             batch_first=True,
-            padding_value=self.tokenizer.comp2idx["PAD"],
+            padding_value=self.tokenizer.sym2idx["PAD"],
         )
         # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
         # [batch_size, n_heads, 1, seq_len]
-        src_mask = torch.eq(input=src, other=self.tokenizer.comp2idx["PAD"]) \
+        src_mask = torch.eq(input=src, other=self.tokenizer.sym2idx["PAD"]) \
             .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
 
         if not self.val:
@@ -57,7 +55,7 @@ class EquivExpr(Dataset):
             tgt = pad_sequence(
                 sequences=tgt,
                 batch_first=True,
-                padding_value=self.tokenizer.comp2idx["PAD"],
+                padding_value=self.tokenizer.sym2idx["PAD"],
             )
             # don't need to feed last token, so -1
             tgt_mask = torch.triu(
@@ -69,7 +67,7 @@ class EquivExpr(Dataset):
             ).to(dtype=torch.bool)
             tgt_pad_mask = torch.eq(
                 input=tgt[:, :-1],
-                other=self.tokenizer.comp2idx["PAD"]
+                other=self.tokenizer.sym2idx["PAD"]
             ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
             tgt_mask |= tgt_pad_mask
 

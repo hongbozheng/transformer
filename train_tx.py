@@ -54,8 +54,8 @@ def main() -> None:
 
     model = Transformer(
         dim=cfg.MODEL.TX.DIM,
-        src_vocab_size=len(tokenizer.components),
-        tgt_vocab_size=len(tokenizer.components),
+        src_vocab_size=len(tokenizer.symbols),
+        tgt_vocab_size=len(tokenizer.symbols),
         src_seq_len=cfg.MODEL.TX.SRC_SEQ_LEN,
         tgt_seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
         n_encoder_layers=cfg.MODEL.TX.N_ENCODER_LAYERS,
@@ -87,7 +87,7 @@ def main() -> None:
     )
 
     criterion = nn.CrossEntropyLoss(
-        ignore_index=tokenizer.comp2idx["PAD"],
+        ignore_index=tokenizer.sym2idx["PAD"],
         label_smoothing=cfg.CRITERION.CROSSENTROPY.LABEL_SMOOTHING,
     )
 

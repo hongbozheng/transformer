@@ -76,7 +76,7 @@ def train_model(
         val_loader: DataLoader,
         seq_len: int,
         tokenizer: Tokenizer,
-):
+) -> None:
     model.to(device=device)
     model.train(mode=True)
 
@@ -148,5 +148,3 @@ def train_model(
                 s=f"[{timestamp()}] [Epoch {epoch}]: Saved best model to "
                   f"'{ckpt_filepath}'"
             )
-
-    return
