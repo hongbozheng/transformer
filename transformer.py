@@ -245,24 +245,32 @@ class MultiHeadAttention(nn.Module):
 class EncoderBlock(nn.Module):
     def __init__(
             self,
-            self_attn: MultiHeadAttention,
-            ffn: FFN,
             dim: int,
+            n_heads: int,
+            d_ff: int,
             dropout: float,
     ) -> None:
         """
         Args:
-            self_attn: MultiHeadAttention
-            ffn: FFN
             dim: embeddings dimension
+            n_heads: number of heads
+            d_ff: feedforward dimension
             dropout: dropout probability
         """
         super().__init__()
         self.attn_norm = LayerNorm(features=dim, eps=1e-6)
-        self.self_attn = self_attn
+        self.self_attn = MultiHeadAttention(
+            dim=dim,
+            n_heads=n_heads,
+            dropout=dropout,
+        )
         self.attn_dropout = nn.Dropout(p=dropout)
         self.ffn_norm = LayerNorm(features=dim, eps=1e-6)
-        self.ffn = ffn
+        self.ffn = FFN(
+            dim=dim,
+            d_ff=d_ff,
+            dropout=dropout,
+        )
         self.ffn_dropout = nn.Dropout(p=dropout)
 
     def forward(self, x: Tensor, mask: Optional[Tensor]) -> Tensor:
@@ -298,29 +306,39 @@ class Encoder(nn.Module):
 class DecoderBlock(nn.Module):
     def __init__(
             self,
-            self_attn: MultiHeadAttention,
-            cross_attn: MultiHeadAttention,
-            ffn: FFN,
             dim: int,
+            n_heads: int,
+            d_ff: int,
             dropout: float,
     ) -> None:
         """
         Args:
-            self_attn: MultiHeadAttention
-            cross_attn: MultiHeadAttention
-            ffn: FFN
             dim: embeddings dimension
+            n_heads: number of heads
+            d_ff: feedforward dimension
             dropout: dropout probability
         """
         super().__init__()
         self.self_attn_norm = LayerNorm(features=dim, eps=1e-6)
-        self.self_attn = self_attn
+        self.self_attn = MultiHeadAttention(
+            dim=dim,
+            n_heads=n_heads,
+            dropout=dropout,
+        )
         self.self_attn_dropout = nn.Dropout(p=dropout)
         self.cross_attn_norm = LayerNorm(features=dim, eps=1e-6)
-        self.cross_attn = cross_attn
+        self.cross_attn = MultiHeadAttention(
+            dim=dim,
+            n_heads=n_heads,
+            dropout=dropout,
+        )
         self.cross_attn_dropout = nn.Dropout(p=dropout)
         self.ffn_norm = LayerNorm(features=dim, eps=1e-6)
-        self.ffn = ffn
+        self.ffn = FFN(
+            dim=dim,
+            d_ff=d_ff,
+            dropout=dropout,
+        )
         self.ffn_dropout = nn.Dropout(p=dropout)
 
     def forward(
@@ -444,20 +462,10 @@ class Transformer(nn.Module):
 
         encoder_blocks = []
         for _ in range(n_encoder_layers):
-            attn = MultiHeadAttention(
+            encoder_block = EncoderBlock(
                 dim=dim,
                 n_heads=n_heads,
-                dropout=dropout,
-            )
-            ffn = FFN(
-                dim=dim,
                 d_ff=dim_feedforward,
-                dropout=dropout,
-            )
-            encoder_block = EncoderBlock(
-                self_attn=attn,
-                ffn=ffn,
-                dim=dim,
                 dropout=dropout,
             )
             encoder_blocks.append(encoder_block)
@@ -468,26 +476,10 @@ class Transformer(nn.Module):
 
         decoder_blocks = []
         for _ in range(n_decoder_layers):
-            self_attn = MultiHeadAttention(
-                dim=dim,
-                n_heads=n_heads,
-                dropout=dropout,
-            )
-            cross_attn = MultiHeadAttention(
-                dim=dim,
-                n_heads=n_heads,
-                dropout=dropout,
-            )
-            ffn = FFN(
-                dim=dim,
-                d_ff=dim_feedforward,
-                dropout=dropout,
-            )
             decoder_block = DecoderBlock(
-                self_attn=self_attn,
-                cross_attn=cross_attn,
-                ffn=ffn,
                 dim=dim,
+                n_heads=n_heads,
+                d_ff=dim_feedforward,
                 dropout=dropout,
             )
             decoder_blocks.append(decoder_block)
