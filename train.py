@@ -73,7 +73,7 @@ def train_model(
         criterion: nn.CrossEntropyLoss,
         max_norm: float,
         train_loader: DataLoader,
-):
+) -> None:
     model.to(device=device)
     model.train(mode=True)
 
@@ -138,5 +138,3 @@ def train_model(
                 s=f"[{timestamp()}] [Epoch {epoch}]: Saved best model to "
                   f"'{ckpt_filepath}'"
             )
-
-    return

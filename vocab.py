@@ -2,9 +2,10 @@ import sympy as sp
 from collections import OrderedDict
 
 
-SPECIAL_WORDS = ["PAD", "SOE", "EOE"]
-CONSTANTS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "pi", "e"]
-SYMBOLS = ["INT+", "INT-"]
+CONSTANTS = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "pi", "e",
+    "INT+", "INT-",
+]
 
 VARIABLES = OrderedDict({
     'x': sp.Symbol('x', real=None, nonzero=None, positive=None),

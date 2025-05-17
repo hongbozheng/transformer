@@ -11,7 +11,6 @@ class InfoNCE(nn.Module):
         super().__init__()
         self.temperature = temperature
         self.reduction = reduction
-        return
 
     def forward(
             self,
@@ -45,7 +44,6 @@ class ContrastiveLoss(nn.Module):
         super().__init__()
         self.margin = margin
         self.reduction = reduction
-        return
 
     def forward(
             self,
@@ -75,7 +73,6 @@ class SimCSE(nn.Module):
         super().__init__()
         self.temperature = temperature
         self.reduction = reduction
-        return
 
     def forward(
             self,

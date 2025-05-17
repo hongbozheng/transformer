@@ -47,8 +47,8 @@ def main() -> None:
 
     model = Transformer(
         dim=cfg.MODEL.TX.DIM,
-        src_vocab_size=len(tokenizer.components),
-        tgt_vocab_size=len(tokenizer.components),
+        src_vocab_size=len(tokenizer.symbols),
+        tgt_vocab_size=len(tokenizer.symbols),
         src_seq_len=cfg.MODEL.TX.SRC_SEQ_LEN,
         tgt_seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
         n_encoder_layers=cfg.MODEL.TX.N_ENCODER_LAYERS,

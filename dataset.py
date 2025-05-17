@@ -1,5 +1,4 @@
 from torch import Tensor
-from typing import Dict, List
 
 import torch
 from tokenizer import Tokenizer
@@ -20,12 +19,11 @@ class CL(Dataset):
                 (expr_triplet[0], expr_triplet[1], expr_triplet[2])
             )
         file.close()
-        return
 
     def __len__(self) -> int:
         return len(self.exprs)
 
-    def __getitem__(self, idx: int) -> Dict[str, Tensor]:
+    def __getitem__(self, idx: int) -> dict[str, Tensor]:
         expr = self.exprs[idx]
 
         src_tokens = self.tokenizer.encode(expr=expr[0])
@@ -33,7 +31,7 @@ class CL(Dataset):
         neg_tokens = self.tokenizer.encode(expr=expr[2])
         return {"src": src_tokens, "pos": pos_tokens, "neg": neg_tokens}
 
-    def collate_fn(self, batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
+    def collate_fn(self, batch: list[dict[str, Tensor]]) -> dict[str, Tensor]:
         src = []
         pos = []
         neg = []
@@ -47,11 +45,11 @@ class CL(Dataset):
         src = pad_sequence(
             sequences=src,
             batch_first=True,
-            padding_value=self.tokenizer.comp2idx["PAD"],
+            padding_value=self.tokenizer.sym2idx["PAD"],
         )
         # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
         # [batch_size, 1 (n_heads), 1, seq_len]
-        src_mask = torch.eq(input=src, other=self.tokenizer.comp2idx["PAD"]) \
+        src_mask = torch.eq(input=src, other=self.tokenizer.sym2idx["PAD"]) \
             .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
 
         return {
