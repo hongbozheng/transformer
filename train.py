@@ -120,7 +120,6 @@ def train_model(
     init_epoch = 0
     init_batch = 0
     best_acc = 0.0
-    avg_losses = []  # TODO: Store train losses & val acc in JSON?
 
     if os.path.exists(path=ckpt_last):
         ckpt = torch.load(f=ckpt_last, map_location=device)
