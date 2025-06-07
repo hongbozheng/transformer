@@ -4,6 +4,7 @@ import logger
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from logger import log_error
 
 
 class InfoNCE(nn.Module):
@@ -18,12 +19,24 @@ class InfoNCE(nn.Module):
             pos_key: Tensor,
             neg_key: Tensor,
     ) -> Tensor:
+        # [B, D] -> [B, D]
         query = F.normalize(input=query, p=2.0, dim=-1, eps=1e-12)
+        # [B, D] -> [B, D]
         pos_key = F.normalize(input=pos_key, p=2.0, dim=-1, eps=1e-12)
+        # [B, NG, D] -> [B, NG, D]
         neg_key = F.normalize(input=neg_key, p=2.0, dim=-1, eps=1e-12)
 
+        # [B, D] * [B, D] -> [B, 1]
         pos_logit = torch.sum(query*pos_key, dim=1, keepdim=True)
+
+        # [B, D] -> [B, 1, D]
+        query = query.unsqueeze(dim=1)
+        # [B, 1, D] @ [B, D, NG] -> [B, 1, NG]
         neg_logit = query @ neg_key.transpose(dim0=-2, dim1=-1)
+        # [B, 1, NG] -> [B, NG]
+        neg_logit = neg_logit.squeeze(dim=1)
+
+        # [B, 1] [B, NG] -> [B, 1 + NG]
         logits = torch.cat(tensors=[pos_logit, neg_logit], dim=1)
         labels = torch.zeros(
             logits.size(dim=0),
@@ -97,3 +110,32 @@ class SimCSE(nn.Module):
             )
 
         return loss
+
+
+def build_criterion(cfg) -> nn.Module:
+    criterion_name = cfg.TRAIN.CRITERION.NAME.lower()
+
+    criterion = None
+    if criterion_name == 'infonce':
+        criterion = InfoNCE(
+            temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
+            reduction=cfg.CRITERION.INFONCE.REDUCTION,
+        )
+    elif criterion_name == 'simcse':
+        criterion = ContrastiveLoss(
+            margin=cfg.CRITERION.CL.MARGIN,
+            reduction=cfg.CRITERION.CL.REDUCTION,
+        )
+    elif criterion_name == 'contrastiveloss':
+        criterion = SimCSE(
+            temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
+            reduction=cfg.CRITERION.INFONCE.REDUCTION,
+        )
+    else:
+        log_error(
+            "Invalid criterion. "
+            "Please choose from {{'InfoNCE', 'ContrastiveLoss', 'SimCSE'}}."
+        )
+        exit(1)
+
+    return criterion

@@ -2,12 +2,12 @@
 
 
 from config import get_config, DEVICE
-from criterion import ContrastiveLoss, InfoNCE, SimCSE
+from criterion import build_criterion
 from dataset import CL
+from lr_scheduler import build_scheduler
+from optimizer import build_optimizer
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
-from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 from train import train_model
 from transformer import Transformer
 
@@ -22,7 +22,7 @@ def main() -> None:
         tokenizer=tokenizer,
     )
 
-    train_loader = DataLoader(
+    dataloader = DataLoader(
         dataset=cl_dataset,
         batch_size=cfg.LOADER.TRAIN.BATCH_SIZE,
         shuffle=cfg.LOADER.TRAIN.SHUFFLE,
@@ -58,55 +58,43 @@ def main() -> None:
         dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
     )
 
-    optimizer = AdamW(
-        params=model.parameters(),
-        lr=cfg.OPTIM.ADAMW.LR,
-        weight_decay=cfg.OPTIM.ADAMW.WEIGHT_DECAY,
-    )
+    # define optimizer
+    optimizer = build_optimizer(cfg=cfg, model=model)
 
-    # lr_scheduler = CosineAnnealingLR(
-    #     optimizer=optimizer,
-    #     T_max=50,
-    #     eta_min=1e-8,
-    #     last_epoch=-1,
-    # )
+    # define lr scheduler
+    lr_scheduler = build_scheduler(cfg=cfg, optimizer=optimizer)
 
-    lr_scheduler = CosineAnnealingWarmRestarts(
-        optimizer=optimizer,
-        T_0=cfg.LRS.CAWR.T_0,
-        T_mult=cfg.LRS.CAWR.T_MULT,
-        eta_min=cfg.LRS.CAWR.ETA_MIN,
-        last_epoch=cfg.LRS.CAWR.LAST_EPOCH,
-    )
+    # define criterion
+    criterion = build_criterion(cfg=cfg)
 
-    criterion = InfoNCE(
-        temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
-        reduction=cfg.CRITERION.INFONCE.REDUCTION,
-    )
-
-    # criterion = SimCSE(
+    # criterion = InfoNCE(
     #     temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
     #     reduction=cfg.CRITERION.INFONCE.REDUCTION,
     # )
 
-    # criterion = ContrastiveLoss(
-    #     margin=cfg.CRITERION.CL.MARGIN,
-    #     reduction=cfg.CRITERION.CL.REDUCTION,
-    # )
+    # # criterion = SimCSE(
+    # #     temperature=cfg.CRITERION.INFONCE.TEMPERATURE,
+    # #     reduction=cfg.CRITERION.INFONCE.REDUCTION,
+    # # )
+
+    # # criterion = ContrastiveLoss(
+    # #     margin=cfg.CRITERION.CL.MARGIN,
+    # #     reduction=cfg.CRITERION.CL.REDUCTION,
+    # # )
 
     train_model(
         model=model,
-        device=DEVICE,
-        ckpt_filepath=cfg.BEST_MODEL.TX,
+        ckpt_best=cfg.CKPT.BEST,
+        ckpt_last=cfg.CKPT.LAST,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        n_epochs=cfg.TRAIN.N_EPOCHS,
         criterion=criterion,
         max_norm=cfg.TRAIN.MAX_NORM,
-        train_loader=train_loader,
+        device=DEVICE,
+        n_epochs=cfg.TRAIN.N_EPOCHS,
+        dataloader=dataloader,
+        save_every_n_iters=cfg.TRAIN.SAVE_N_ITERS,
     )
-
-    return
 
 
 if __name__ == '__main__':
