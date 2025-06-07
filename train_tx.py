@@ -4,9 +4,9 @@
 import torch.nn as nn
 from config import get_config, DEVICE
 from dataset import EquivExpr
+from lr_scheduler import build_scheduler
+from optimizer import build_optimizer
 from tokenizer import Tokenizer
-from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR, CosineAnnealingWarmRestarts
 from torch.utils.data import DataLoader
 from train import train_model
 from transformer import Transformer
@@ -65,26 +65,11 @@ def main() -> None:
         dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
     )
 
-    optimizer = AdamW(
-        params=model.parameters(),
-        lr=cfg.OPTIM.ADAMW.LR,
-        weight_decay=cfg.OPTIM.ADAMW.WEIGHT_DECAY,
-    )
+    # define optimizer
+    optimizer = build_optimizer(cfg=cfg, model=model)
 
-    # lr_scheduler = CosineAnnealingLR(
-    #     optimizer=optimizer,
-    #     T_max=10,
-    #     eta_min=1e-8,
-    #     last_epoch=-1,
-    # )
-
-    lr_scheduler = CosineAnnealingWarmRestarts(
-        optimizer=optimizer,
-        T_0=cfg.LRS.CAWR.T_0,
-        T_mult=cfg.LRS.CAWR.T_MULT,
-        eta_min=cfg.LRS.CAWR.ETA_MIN,
-        last_epoch=cfg.LRS.CAWR.LAST_EPOCH,
-    )
+    # define lr scheduler
+    lr_scheduler = build_scheduler(cfg=cfg, optimizer=optimizer)
 
     criterion = nn.CrossEntropyLoss(
         ignore_index=tokenizer.sym2idx["PAD"],
@@ -94,7 +79,8 @@ def main() -> None:
     train_model(
         model=model,
         device=DEVICE,
-        ckpt_filepath=cfg.BEST_MODEL.TX,
+        ckpt_best=cfg.CKPT.BEST,
+        ckpt_last=cfg.CKPT.LAST,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
         n_epochs=cfg.TRAIN.N_EPOCHS,
@@ -104,6 +90,7 @@ def main() -> None:
         val_loader=val_loader,
         seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
         tokenizer=tokenizer,
+        save_every_n_iters=cfg.TRAIN.SAVE_N_ITERS,
     )
 
     return

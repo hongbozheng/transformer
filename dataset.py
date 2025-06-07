@@ -71,17 +71,6 @@ class EquivExpr(Dataset):
             ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
             tgt_mask |= tgt_pad_mask
 
-            '''
-            print(tgt)
-            print(src)
-            print("src_mask")
-            print(src_mask, src_mask.size())
-            print("tgt_mask")
-            print(tgt_mask, tgt_mask.size())
-            print("tgt_pad_mask")
-            print(tgt_pad_mask, tgt_pad_mask.size())
-            print(tgt_mask, tgt_mask.size())
-            '''
             return {
                 "src": src,
                 "tgt": tgt,
