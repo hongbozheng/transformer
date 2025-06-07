@@ -93,8 +93,6 @@ def main() -> None:
         save_every_n_iters=cfg.TRAIN.SAVE_N_ITERS,
     )
 
-    return
-
 
 if __name__ == '__main__':
     main()
