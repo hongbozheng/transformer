@@ -203,6 +203,8 @@ def train_model(
             save_every_n_iters=save_every_n_iters,
         )
 
+        init_batch = 0
+
         epoch_tqdm.write(
             s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f}"
         )
