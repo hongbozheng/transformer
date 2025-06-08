@@ -111,8 +111,7 @@ def train_epoch(
 
         loss_meter.update(loss.item(), n=src.size(dim=0))
         loader_tqdm.set_description(
-            desc=f"[{timestamp()}] [Batch {i+1}] "
-                 f"train loss {loss_meter.avg:.6f}",
+            desc=f"[{timestamp()}] [Batch {i+1}] loss {loss_meter.avg:.6f}",
             refresh=True,
         )
 
