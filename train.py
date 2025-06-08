@@ -74,9 +74,9 @@ def train_epoch(
 
             torch.save(
                 {
-                    "model_state": model.state_dict(),
-                    "optimizer_state": optimizer.state_dict(),
-                    "lr_scheduler_state": lr_scheduler.state_dict(),
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
                     "epoch": epoch,
                     "batch": i,
                     "loss": loss,
@@ -122,7 +122,7 @@ def train_model(
     best_acc = 0.0
 
     if os.path.exists(path=ckpt_last):
-        ckpt = torch.load(f=ckpt_last, map_location=device)
+        ckpt = torch.load(f=ckpt_last, map_location=device, weights_only=False)
         model.load_state_dict(state_dict=ckpt["model_state_dict"])
         optimizer.load_state_dict(state_dict=ckpt["optimizer_state_dict"])
         lr_scheduler.load_state_dict(state_dict=ckpt["lr_scheduler_state_dict"])
@@ -130,7 +130,7 @@ def train_model(
         init_epoch = ckpt["epoch"]+1 if init_batch == 0 else ckpt["epoch"]
         best_acc = ckpt["best_acc"]
         filename = os.path.basename(p=ckpt_last)
-        logger.log_info(f"Loaded `{filename}`.")
+        logger.log_info(f"Loaded `{filename}`")
 
     epoch_tqdm = tqdm(
         iterable=range(init_epoch, n_epochs),
@@ -173,9 +173,9 @@ def train_model(
             best_acc = acc
             torch.save(
                 obj={
-                    "model": model.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "lr_scheduler": lr_scheduler.state_dict(),
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
                     "epoch": epoch,
                     "batch": -1,
                     "best_acc": best_acc,
@@ -190,9 +190,9 @@ def train_model(
 
         torch.save(
             {
-                "model_state": model.state_dict(),
-                "optimizer_state": optimizer.state_dict(),
-                "lr_scheduler_state": lr_scheduler.state_dict(),
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "lr_scheduler_state_dict": lr_scheduler.state_dict(),
                 "epoch": epoch,
                 "batch": -1,
                 "best_acc": best_acc,

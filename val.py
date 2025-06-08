@@ -197,7 +197,7 @@ def val_epoch(
         val_loader: DataLoader,
         seq_len: int,
         tokenizer: Tokenizer,
-):
+) -> float:
     model.eval()
 
     loader_tqdm = tqdm(iterable=val_loader, position=1, leave=False)

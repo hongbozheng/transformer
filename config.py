@@ -87,8 +87,8 @@ _C.DATA = CN()
 
 """ EquivExpr """
 _C.DATA.DATA_DIR = "data"
-_C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/expr_pairs.txt"
-_C.DATA.VAL_FILE = _C.DATA.DATA_DIR + "/exprs_val.txt"
+_C.DATA.TRAIN_FILE = _C.DATA.DATA_DIR + "/pairs.txt"
+_C.DATA.VAL_FILE = _C.DATA.DATA_DIR + "/val.txt"
 
 
 # -----------------------------------------------------------------------------
