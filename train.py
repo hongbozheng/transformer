@@ -121,9 +121,9 @@ def train_epoch(
 
             torch.save(
                 {
-                    "model_state": model.state_dict(),
-                    "optimizer_state": optimizer.state_dict(),
-                    "lr_scheduler_state": lr_scheduler.state_dict(),
+                    "model_state_dict": model.state_dict(),
+                    "optimizer_state_dict": optimizer.state_dict(),
+                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
                     "epoch": epoch,
                     "batch": i,
                     "loss": loss,
