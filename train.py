@@ -1,10 +1,9 @@
-import logger
 import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from avg_meter import AverageMeter
-from logger import timestamp
+from logger import log_info, timestamp
 from timm.scheduler.scheduler import Scheduler
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
@@ -115,7 +114,7 @@ def train_model(
     model.train(mode=True)
 
     params = train_params(model=model)
-    logger.log_info(f"Total trainable parameters {params * 1e-6}M")
+    log_info(f"Total trainable parameters {params * 1e-6}M")
 
     init_epoch = 0
     init_batch = 0
@@ -130,7 +129,7 @@ def train_model(
         init_epoch = ckpt["epoch"]+1 if init_batch == 0 else ckpt["epoch"]
         best_acc = ckpt["best_acc"]
         filename = os.path.basename(p=ckpt_last)
-        logger.log_info(f"Loaded `{filename}`")
+        log_info(f"Loaded `{filename}`")
 
     epoch_tqdm = tqdm(
         iterable=range(init_epoch, n_epochs),
