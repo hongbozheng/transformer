@@ -165,6 +165,8 @@ def train_model(
             tokenizer=tokenizer,
         )
 
+        init_batch = 0
+
         epoch_tqdm.write(
             s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f} acc {acc:.6f}"
         )
