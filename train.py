@@ -114,7 +114,7 @@ def train_model(
     model.train(mode=True)
 
     params = train_params(model=model)
-    log_info(f"Total trainable parameters {params * 1e-6}M")
+    log_info(f"Total trainable parameters {params * 1e-6:4f}M")
 
     init_epoch = 0
     init_batch = 0
