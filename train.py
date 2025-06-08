@@ -204,9 +204,7 @@ def train_model(
 
         init_batch = 0
 
-        epoch_tqdm.write(
-            s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f}"
-        )
+        epoch_tqdm.write(s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f}")
 
         torch.save(
             {
