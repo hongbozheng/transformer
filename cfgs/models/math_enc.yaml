@@ -1,0 +1,82 @@
+MODEL:
+  NAME: "seq2seq"
+  SEQ2SEQ:
+    DIM: 512
+    N_HEADS: 8
+    N_ENCODER_LAYERS: 6
+    N_DECODER_LAYERS: 6
+    DIM_FEEDFORWARD: 2048
+    DROPOUT: 0.0
+    SRC_VOCAB_SIZE: null
+    TGT_VOCAB_SIZE: null
+    SRC_SEQ_LEN: 200
+    TGT_SEQ_LEN: 200
+    INCL_DEC: false
+
+CKPT:
+  DIR:  "math_enc"
+  BEST: "math_enc/best.ckpt"
+  LAST: "math_enc/last.ckpt"
+
+OPTIM:
+  NAME: "adamw"
+  BASE_LR: 1e-4
+  WARMUP_LR: 1e-7
+  MIN_LR: 1e-6
+
+  SGD:
+    MOMENTUM: 0.90
+    WEIGHT_DECAY: 1e-4
+    NESTEROV: true
+  ADAMW:
+    BETAS: [0.9, 0.999]
+    EPS: 1e-8
+    WEIGHT_DECAY: 0.01
+
+LRS:
+  NAME: "cosine"
+  STEP_LRS:
+    DECAY_RATE: 0.1
+
+CRITERION:
+  NAME: "infonce"
+  CROSS_ENTROPY:
+    LABEL_SMOOTHING: 0.1
+  INFONCE:
+    TEMPERATURE: 0.1
+    REDUCTION: "mean"
+  SIMCSE:
+    TEMPERATURE: 0.1
+    REDUCTION: "mean"
+  CONTRASTIVE_LOSS:
+    MARGIN: 1.0
+    REDUCTION: "mean"
+
+POSTPROCESS:
+  NAME: "max"
+
+LOADER:
+  TRAIN:
+    BATCH_SIZE: 256
+    SHUFFLE: true
+    NUM_WORKERS: 1
+    PIN_MEMORY: true
+  VAL:
+    BATCH_SIZE: 256
+    SHUFFLE: true
+    NUM_WORKERS: 1
+    PIN_MEMORY: true
+  TEST:
+    BATCH_SIZE: 256
+    SHUFFLE: true
+    NUM_WORKERS: 1
+    PIN_MEMORY: true
+
+TRAIN:
+  DECAY_EPOCHS: 3
+  MAX_NORM: 1.0
+  N_ITER_PER_EPOCH: 312500
+  WARMUP_EPOCHS: 0.016
+  N_EPOCHS: 3
+  SAVE_N_ITERS: 1000
+  STATS_FILEPATH: "stats.json"
