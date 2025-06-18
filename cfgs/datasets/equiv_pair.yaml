@@ -1,0 +1,6 @@
+DATA:
+  NAME: "equiv_pair"
+  EQUIV_PAIR: "data/pairs.txt"
+  VAL: "data/val.txt"
+  CONTRASTIVE_EXPR: null
+  N_EXPRS: null

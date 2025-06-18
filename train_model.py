@@ -1,33 +1,44 @@
 #!/usr/bin/env python3
 
 
-import torch.nn as nn
+import argparse
 from config import get_config, DEVICE
-from dataset import EquivExpr
+from criterion import build_criterion
+from datasets.registry import build_dataset
 from lr_scheduler import build_scheduler
+from models.registry import build_model
 from optimizer import build_optimizer
 from tokenizer import Tokenizer
 from torch.utils.data import DataLoader
 from train import train_model
-from transformer import Transformer
 
 
 def main() -> None:
-    cfg = get_config(args=None)
+    parser = argparse.ArgumentParser(prog='2D Medical Image Segementation')
+    parser.add_argument(
+        '--cfg',
+        type=str,
+        required=True,
+        metavar="FILE",
+        help='path to config file',
+    )
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        required=True,
+        metavar="FILE",
+        help='path to dataset config file',
+    )
+    args, unparsed = parser.parse_known_args()
+    cfg = get_config(args=args)
 
     tokenizer = Tokenizer()
 
-    train_dataset = EquivExpr(
-        filepath=cfg.DATA.TRAIN_FILE,
-        tokenizer=tokenizer,
-        val=False,
-    )
-    val_dataset = EquivExpr(
-        filepath=cfg.DATA.VAL_FILE,
-        tokenizer=tokenizer,
-        val=True,
-    )
+    # dataset
+    train_dataset = build_dataset(cfg=cfg, tokenizer=tokenizer)['train']
+    val_dataset = build_dataset(cfg=cfg, tokenizer=tokenizer)['val']
 
+    # dataloader
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=cfg.LOADER.TRAIN.BATCH_SIZE,
@@ -43,52 +54,46 @@ def main() -> None:
     #     print(batch["tgt_mask"])
     #     break
     # return
-    val_loader = DataLoader(
-        dataset=val_dataset,
-        batch_size=cfg.LOADER.VAL.BATCH_SIZE,
-        shuffle=cfg.LOADER.VAL.SHUFFLE,
-        num_workers=cfg.LOADER.VAL.NUM_WORKERS,
-        collate_fn=val_dataset.collate_fn,
-        pin_memory=cfg.LOADER.VAL.PIN_MEMORY,
-    )
+    if val_dataset is not None:
+        val_loader = DataLoader(
+            dataset=val_dataset,
+            batch_size=cfg.LOADER.VAL.BATCH_SIZE,
+            shuffle=cfg.LOADER.VAL.SHUFFLE,
+            num_workers=cfg.LOADER.VAL.NUM_WORKERS,
+            collate_fn=val_dataset.collate_fn,
+            pin_memory=cfg.LOADER.VAL.PIN_MEMORY,
+        )
+    else:
+        val_loader = None
 
-    model = Transformer(
-        dim=cfg.MODEL.TX.DIM,
-        src_vocab_size=len(tokenizer.symbols),
-        tgt_vocab_size=len(tokenizer.symbols),
-        src_seq_len=cfg.MODEL.TX.SRC_SEQ_LEN,
-        tgt_seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
-        n_encoder_layers=cfg.MODEL.TX.N_ENCODER_LAYERS,
-        n_decoder_layers=cfg.MODEL.TX.N_DECODER_LAYERS,
-        n_heads=cfg.MODEL.TX.N_HEADS,
-        dropout=cfg.MODEL.TX.DROPOUT,
-        dim_feedforward=cfg.MODEL.TX.DIM_FEEDFORWARD,
-    )
+    # model
+    model = build_model(cfg=cfg, tokenizer=tokenizer)
+    print(model)
 
-    # define optimizer
+    # optimizer
     optimizer = build_optimizer(cfg=cfg, model=model)
 
-    # define lr scheduler
+    # lr scheduler
     lr_scheduler = build_scheduler(cfg=cfg, optimizer=optimizer)
 
-    criterion = nn.CrossEntropyLoss(
-        ignore_index=tokenizer.sym2idx["PAD"],
-        label_smoothing=cfg.CRITERION.CROSSENTROPY.LABEL_SMOOTHING,
-    )
+    # criterion
+    criterion = build_criterion(cfg=cfg, ignore_index=tokenizer.sym2idx["PAD"])
 
     train_model(
         model=model,
-        device=DEVICE,
         ckpt_best=cfg.CKPT.BEST,
         ckpt_last=cfg.CKPT.LAST,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        n_epochs=cfg.TRAIN.N_EPOCHS,
+        postprocess=cfg.POSTPROCESS.NAME,
+        n_exprs=cfg.DATA.N_EXPRS,
         criterion=criterion,
         max_norm=cfg.TRAIN.MAX_NORM,
+        device=DEVICE,
+        n_epochs=cfg.TRAIN.N_EPOCHS,
         train_loader=train_loader,
         val_loader=val_loader,
-        seq_len=cfg.MODEL.TX.TGT_SEQ_LEN,
+        seq_len=cfg.MODEL.SEQ2SEQ.TGT_SEQ_LEN,
         tokenizer=tokenizer,
         save_every_n_iters=cfg.TRAIN.SAVE_N_ITERS,
     )

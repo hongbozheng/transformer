@@ -2,7 +2,6 @@ import torch.optim as optim
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from timm.scheduler.scheduler import Scheduler
 from timm.scheduler.step_lr import StepLRScheduler
-from logger import log_error
 
 
 class LinearLRScheduler(Scheduler):
@@ -71,44 +70,43 @@ class LinearLRScheduler(Scheduler):
 def build_scheduler(cfg, optimizer: optim.Optimizer) -> Scheduler:
     n_steps = int(cfg.TRAIN.N_ITER_PER_EPOCH * cfg.TRAIN.N_EPOCHS)
     warmup_steps = int(cfg.TRAIN.N_ITER_PER_EPOCH * cfg.TRAIN.WARMUP_EPOCHS)
-    decay_steps = int(cfg.TRAIN.N_ITER_PER_EPOCH * cfg.TRAIN.LRS.DECAY_EPOCHS)
+    decay_steps = int(cfg.TRAIN.N_ITER_PER_EPOCH * cfg.TRAIN.DECAY_EPOCHS)
 
-    lr_scheduler_name = cfg.TRAIN.LRS.NAME.lower()
+    name = cfg.LRS.NAME.lower()
 
     lr_scheduler = None
-    if lr_scheduler_name == 'cosine':
+    if name == 'cosine':
         lr_scheduler = CosineLRScheduler(
             optimizer,
             t_initial=n_steps,
-            lr_min=cfg.TRAIN.OPTIM.MIN_LR,
-            warmup_lr_init=cfg.TRAIN.OPTIM.WARMUP_LR,
+            lr_min=cfg.OPTIM.MIN_LR,
+            warmup_lr_init=cfg.OPTIM.WARMUP_LR,
             warmup_t=warmup_steps,
             cycle_limit=1,
             t_in_epochs=False,
         )
-    elif lr_scheduler_name == 'linear':
+    elif name == 'linear':
         lr_scheduler = LinearLRScheduler(
             optimizer,
             t_initial=n_steps,
             lr_min_rate=0.01,
-            warmup_lr_init=cfg.TRAIN.OPTIM.WARMUP_LR,
+            warmup_lr_init=cfg.OPTIM.WARMUP_LR,
             warmup_t=warmup_steps,
             t_in_epochs=False,
         )
-    elif lr_scheduler_name == 'step':
+    elif name == 'step':
         lr_scheduler = StepLRScheduler(
             optimizer,
             decay_t=decay_steps,
-            decay_rate=cfg.TRAIN.LRS.DECAY_RATE,
-            warmup_lr_init=cfg.TRAIN.OPTIM.WARMUP_LR,
+            decay_rate=cfg.LRS.STEP_LR.DECAY_RATE,
+            warmup_lr_init=cfg.OPTIM.WARMUP_LR,
             warmup_t=warmup_steps,
             t_in_epochs=False,
         )
     else:
-        log_error(
+        raise ValueError(
             "Invalid learning rate scheduler. "
             "Please choose from {{'cosine', 'linear', 'step'}}."
         )
-        exit(1)
 
     return lr_scheduler

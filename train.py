@@ -1,3 +1,5 @@
+from typing import Optional
+
 import os
 import torch
 import torch.nn as nn
@@ -17,6 +19,8 @@ def train_epoch(
         ckpt_last: str,
         optimizer: optim.Optimizer,
         lr_scheduler: Scheduler,
+        postprocess: Optional[str],
+        n_exprs: Optional[str],
         criterion: nn.CrossEntropyLoss,
         max_norm: float,
         device: torch.device,
@@ -25,6 +29,8 @@ def train_epoch(
         init_batch: int,
         save_every_n_iters: int,
 ) -> float:
+    model.train(mode=True)
+
     loader_tqdm = tqdm(iterable=train_loader, position=1, leave=False)
     loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
 
@@ -37,10 +43,14 @@ def train_epoch(
 
         src_token_ids = batch["src_token_ids"].to(device=device)
         src_attn_mask = batch["src_attn_mask"].to(device=device)
-        tgt_token_ids = batch["tgt_token_ids"].to(device=device)
-        tgt_attn_mask = batch["tgt_attn_mask"].to(device=device)
-        gt = tgt_token_ids[:, 1:]
-        tgt_token_ids = tgt_token_ids[:, :-1]
+        if postprocess is None:
+            tgt_token_ids = batch["tgt_token_ids"].to(device=device)
+            tgt_attn_mask = batch["tgt_attn_mask"].to(device=device)
+            gt = tgt_token_ids[:, 1:]
+            tgt_token_ids = tgt_token_ids[:, :-1]
+        else:
+            tgt_token_ids = None
+            tgt_attn_mask = None
 
         optimizer.zero_grad()
         logits = model(
@@ -49,10 +59,45 @@ def train_epoch(
             tgt_token_ids=tgt_token_ids,
             tgt_attn_mask=tgt_attn_mask,
         )
-        loss = criterion(
-            input=logits.view(-1, logits.size(dim=-1)),
-            target=gt.reshape(-1)
-        )
+        if postprocess is None:
+            loss = criterion(
+                input=logits.view(-1, logits.size(dim=-1)),
+                target=gt.reshape(-1),
+            )
+        else:
+            if postprocess == "cls":
+                logits = logits[:, 0, ...]
+                logits = logits.view(-1, n_exprs, logits.size(dim=-1))
+            elif postprocess in {"mean", "max"}:
+                eoe_ids = src_attn_mask.int().sum(dim=-1) - 1
+                batch_ids = torch.arange(
+                    start=0,
+                    end=src_attn_mask.size(dim=0),
+                    dtype=torch.int64,
+                    device=src_attn_mask.device,
+                )
+                src_attn_mask[batch_ids, eoe_ids] = False
+                src_attn_mask[:, 0] = False
+
+                logits[~src_attn_mask] = 0.0
+
+                logits = logits.view(
+                    -1,
+                    n_exprs,
+                    logits.size(dim=-2),
+                    logits.size(dim=-1),
+                )
+
+                if postprocess == "mean":
+                    logits = logits.mean(dim=-2, keepdim=False)
+                else:
+                    logits, _ = logits.max(dim=-2, keepdim=False)
+
+            query = logits[:, 0, ...]
+            pos_key = logits[:, 1, ...]
+            neg_key = logits[:, 2:, ...]
+            loss = criterion(query=query, pos_key=pos_key, neg_key=neg_key)
+
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
         optimizer.step()
@@ -95,12 +140,14 @@ def train_model(
         ckpt_last: str,
         optimizer: optim.Optimizer,
         lr_scheduler: Scheduler,
+        postprocess: Optional[str],
+        n_exprs: Optional[str],
         criterion: nn.CrossEntropyLoss,
         max_norm: float,
         device: torch.device,
         n_epochs: int,
         train_loader: DataLoader,
-        val_loader: DataLoader,
+        val_loader: Optional[DataLoader],
         seq_len: int,
         tokenizer: Tokenizer,
         save_every_n_iters: int,
@@ -110,7 +157,6 @@ def train_model(
         os.makedirs(name=path, exist_ok=True)
 
     model.to(device=device)
-    model.train(mode=True)
 
     params = train_params(model=model)
     log_info(f"Total trainable parameters {params * 1e-6:4f}M")
@@ -147,6 +193,8 @@ def train_model(
             ckpt_last=ckpt_last,
             optimizer=optimizer,
             lr_scheduler=lr_scheduler,
+            postprocess=postprocess,
+            n_exprs=n_exprs,
             criterion=criterion,
             max_norm=max_norm,
             device=device,
@@ -155,36 +203,38 @@ def train_model(
             init_batch=init_batch,
             save_every_n_iters=save_every_n_iters,
         )
-        acc = val_epoch(
-            model=model,
-            val_loader=val_loader,
-            device=device,
-            seq_len=seq_len,
-            tokenizer=tokenizer,
-        )
+        if postprocess is None:
+            acc = val_epoch(
+                model=model,
+                val_loader=val_loader,
+                device=device,
+                seq_len=seq_len,
+                tokenizer=tokenizer,
+            )
+            epoch_tqdm.write(s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f} acc {acc:.6f}")
+
+            if acc > best_acc:
+                best_acc = acc
+                torch.save(
+                    obj={
+                        "model_state_dict": model.state_dict(),
+                        "optimizer_state_dict": optimizer.state_dict(),
+                        "lr_scheduler_state_dict": lr_scheduler.state_dict(),
+                        "epoch": epoch,
+                        "batch": -1,
+                        "best_acc": best_acc,
+                        "loss": loss,
+                    },
+                    f=ckpt_best,
+                )
+                epoch_tqdm.write(
+                    s=f"[{timestamp()}] [Epoch {epoch}] Saved best model to "
+                    f"`{ckpt_best}`"
+                )
+        else:
+            epoch_tqdm.write(s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f}")
 
         init_batch = 0
-
-        epoch_tqdm.write(s=f"[{timestamp()}] [Epoch {epoch}] loss {loss:.6f} acc {acc:.6f}")
-
-        if acc > best_acc:
-            best_acc = acc
-            torch.save(
-                obj={
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "lr_scheduler_state_dict": lr_scheduler.state_dict(),
-                    "epoch": epoch,
-                    "batch": -1,
-                    "best_acc": best_acc,
-                    "loss": loss,
-                },
-                f=ckpt_best,
-            )
-            epoch_tqdm.write(
-                s=f"[{timestamp()}] [Epoch {epoch}] Saved best model to "
-                  f"`{ckpt_best}`"
-            )
 
         torch.save(
             {

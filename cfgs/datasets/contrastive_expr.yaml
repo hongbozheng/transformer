@@ -1,0 +1,6 @@
+DATA:
+  NAME: "contrastive_expr"
+  EQUIV_PAIR: null
+  VAL: null
+  CONTRASTIVE_EXPR: "data/triplets.txt"
+  N_EXPRS: 3

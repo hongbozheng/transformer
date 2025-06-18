@@ -1,6 +1,5 @@
 import torch.nn as nn
 import torch.optim as optim
-from logger import log_error
 
 
 def build_optimizer(cfg, model: nn.Module) -> optim.Optimizer:
@@ -24,33 +23,32 @@ def build_optimizer(cfg, model: nn.Module) -> optim.Optimizer:
         skip_list=skip,
         skip_keywords=skip_keywords,
         lower_lr_kvs=lower_lr_kvs,
-        base_lr=cfg.TRAIN.OPTIM.BASE_LR,
+        base_lr=cfg.OPTIM.BASE_LR,
     )
 
-    optimizer_name = cfg.TRAIN.OPTIM.NAME.lower()
+    name = cfg.OPTIM.NAME.lower()
 
     optimizer = None
-    if optimizer_name == 'sgd':
+    if name == 'sgd':
         optimizer = optim.SGD(
             params=parameters,
-            lr=cfg.TRAIN.OPTIM.BASE_LR,
+            lr=cfg.OPTIM.BASE_LR,
             momentum=cfg.OPTIM.SGD.MOMENTUM,
             weight_decay=cfg.OPTIM.SGD.WEIGHT_DECAY,
             nesterov=cfg.OPTIM.SGD.NESTEROV,
         )
-    elif optimizer_name == 'adamw':
+    elif name == 'adamw':
         optimizer = optim.AdamW(
             params=parameters,
-            lr=cfg.TRAIN.OPTIM.BASE_LR,
+            lr=cfg.OPTIM.BASE_LR,
             betas=cfg.OPTIM.ADAMW.BETAS,
             eps=cfg.OPTIM.ADAMW.EPS,
             weight_decay=cfg.OPTIM.ADAMW.WEIGHT_DECAY,
         )
     else:
-        log_error(
+        raise ValueError(
             "Invalid optimizer. Please choose from {{'sgd', 'adamw'}}."
         )
-        exit(1)
 
     return optimizer
 

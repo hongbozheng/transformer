@@ -2,12 +2,13 @@ from torch import Tensor
 from typing import Dict, List
 
 import torch
+from .registry import register_dataset
 from tokenizer import Tokenizer
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
 
-class EquivExpr(Dataset):
+class EquivPair(Dataset):
     def __init__(self, filepath: str, tokenizer: Tokenizer, val: bool) -> None:
         super().__init__()
         self.exprs = []
@@ -86,3 +87,19 @@ class EquivExpr(Dataset):
             "src_token_ids": src_token_ids,
             "src_attn_mask": src_attn_mask,
         }
+
+
+@register_dataset(name="equiv_pair")
+def build_dataset(cfg, tokenizer) -> Dict[str, Dataset]:
+    return {
+        "train": EquivPair(
+            filepath=cfg.DATA.EQUIV_PAIR,
+            tokenizer=tokenizer,
+            val=False,
+        ),
+        "val": EquivPair(
+            filepath=cfg.DATA.VAL,
+            tokenizer=tokenizer,
+            val=True,
+        )
+    }
