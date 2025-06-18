@@ -1,4 +1,5 @@
 from torch import Tensor
+from typing import Tuple
 
 from config import START, END, N, TOL, SECS
 import logger
@@ -20,17 +21,17 @@ from tqdm import tqdm
 def greedy_decode(
         model: nn.Module,
         device: torch.device,
-        src: Tensor,
-        src_mask: Tensor,
+        src_token_ids: Tensor,
+        src_attn_mask: Tensor,
         seq_len: int,
         tokenizer: Tokenizer,
 ) -> Tensor:
-    batch_size = src.size(dim=0)
+    batch_size = src_token_ids.size(dim=0)
 
-    mem = model.encode(x=src, mask=src_mask)
+    src_hidden_state = model.encode(token_ids=src_token_ids, mask=src_attn_mask)
 
     # [B, 1] of "SOE"
-    tgt = torch.full(
+    tgt_token_ids = torch.full(
         size=(batch_size, 1),
         fill_value=tokenizer.sym2idx["SOE"],
         dtype=torch.int64,
@@ -43,18 +44,23 @@ def greedy_decode(
         device=device
     )
 
-    for i in range(seq_len-1):
-        tgt_mask = torch.triu(
+    for _ in range(seq_len - 1):
+        tgt_attn_mask = torch.tril(
             input=torch.ones(
-                size=(batch_size, 1, tgt.size(dim=1), tgt.size(dim=1))
+                size=(
+                    batch_size,
+                    1,
+                    tgt_token_ids.size(dim=1),
+                    tgt_token_ids.size(dim=1),
+                )
             ),
-            diagonal=1,
+            diagonal=0,
         ).to(dtype=torch.bool).to(device=device)
         logits = model.decode(
-            x=tgt,
-            mem=mem,
-            tgt_mask=tgt_mask,
-            mem_mask=src_mask,
+            tgt_token_ids=tgt_token_ids,
+            tgt_attn_mask=tgt_attn_mask,
+            src_hidden_state=src_hidden_state,
+            src_attn_mask=src_attn_mask,
         )
         logits = model.proj(x=logits[:, -1])
         #print("after proj")
@@ -62,7 +68,7 @@ def greedy_decode(
         _, nxt_tokens = torch.max(input=logits, dim=1, keepdim=True)
         #print("nxt words")
         #print(nxt_words, nxt_words.size())
-        tgt = torch.cat(tensors=[tgt, nxt_tokens], dim=1)
+        tgt_token_ids = torch.cat(tensors=[tgt_token_ids, nxt_tokens], dim=1)
         #print("tgt")
         #print(tgt, tgt.size())
 
@@ -72,11 +78,11 @@ def greedy_decode(
         if done.all():
             break
 
-    return tgt
+    return tgt_token_ids
 
 
 def equiv(
-        expr_pair: tuple[str, str],
+        expr_pair: Tuple[str, str],
         start: float,
         end: float,
         n: int,
@@ -207,22 +213,22 @@ def val_epoch(
 
     with torch.no_grad():
         for i, batch in enumerate(iterable=loader_tqdm):
-            src = batch["src"].to(device=device)
+            src_token_ids = batch["src_token_ids"].to(device=device)
             # tgt_expr = batch["tgt"].to(device=device)
-            src_mask = batch["src_mask"].to(device=device)
+            src_attn_mask = batch["src_attn_mask"].to(device=device)
 
             preds = greedy_decode(
                 model=model,
                 device=device,
-                src=src,
-                src_mask=src_mask,
+                src_token_ids=src_token_ids,
+                src_attn_mask=src_attn_mask,
                 seq_len=seq_len,
                 tokenizer=tokenizer,
             )
             # print(preds)
             # print(preds.size())
-            acc = calc_acc(src=src, tgt=preds, tokenizer=tokenizer)
-            acc_meter.update(val=acc, n=src.size(dim=0))
+            acc = calc_acc(src=src_token_ids, tgt=preds, tokenizer=tokenizer)
+            acc_meter.update(val=acc, n=src_token_ids.size(dim=0))
 
             loader_tqdm.set_description(
                 desc=f"[{timestamp()}] [Batch {i+1}]: "

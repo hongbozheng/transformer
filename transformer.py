@@ -197,7 +197,7 @@ class MultiHeadAttention(nn.Module):
             q: Tensor,
             k: Tensor,
             v: Tensor,
-            mask: Optional[Tensor] = None,
+            mask: Optional[Tensor],
     ) -> Tensor:
         # [B, L_Q, D] -> [B, L_Q, H * D_H]
         q = self.wq(q)
@@ -223,7 +223,7 @@ class MultiHeadAttention(nn.Module):
         # [B, H, L_Q, D_H] @ [B, H, D_H, L_K] -> [B, H, L_Q, L_K]
         scores = q @ k.transpose(dim0=-2, dim1=-1) / math.sqrt(self.head_dim)
         if mask is not None:
-            scores.masked_fill(mask=mask, value=float('-inf'))
+            scores.masked_fill(mask=~mask, value=float('-inf'))
         scores = F.softmax(scores, dim=-1)
 
         if self.dropout is not None:
@@ -296,7 +296,7 @@ class Encoder(nn.Module):
         self.layers = layers
         self.norm = LayerNorm(features=dim, eps=1e-6)
 
-    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
+    def forward(self, x: Tensor, mask: Optional[Tensor]) -> Tensor:
         for layer in self.layers:
             x = layer(x, mask)
         x = self.norm(x)
@@ -344,17 +344,21 @@ class DecoderBlock(nn.Module):
     def forward(
             self,
             x: Tensor,
-            mem: Tensor,
-            tgt_mask: Tensor,
-            mem_mask: Tensor,
+            tgt_attn_mask: Optional[Tensor],
+            src_hidden_state: Tensor,
+            src_attn_mask: Optional[Tensor],
     ) -> Tensor:
         # self-attention
         x = x + self.self_attn_dropout(
-            self._self_attn(x=self.self_attn_norm(x), mask=tgt_mask)
+            self._self_attn(x=self.self_attn_norm(x), mask=tgt_attn_mask)
         )
         # cross-attention
         x = x + self.cross_attn_dropout(
-            self._cross_attn(x=self.cross_attn_norm(x), mem=mem, mask=mem_mask)
+            self._cross_attn(
+                x=self.cross_attn_norm(x),
+                hidden_state=src_hidden_state,
+                mask=src_attn_mask,
+            )
         )
         # ffn
         x = x + self.ffn_dropout(self.ffn(self.ffn_norm(x)))
@@ -367,10 +371,10 @@ class DecoderBlock(nn.Module):
     def _cross_attn(
             self,
             x: Tensor,
-            mem: Tensor,
+            hidden_state: Tensor,
             mask: Optional[Tensor],
     ) -> Tensor:
-        return self.cross_attn(q=x, k=mem, v=mem, mask=mask)
+        return self.cross_attn(q=x, k=hidden_state, v=hidden_state, mask=mask)
 
 
 class Decoder(nn.Module):
@@ -387,16 +391,16 @@ class Decoder(nn.Module):
     def forward(
             self,
             x: Tensor,
-            mem: Tensor,
-            tgt_mask: Tensor,
-            mem_mask: Tensor,
+            tgt_attn_mask: Optional[Tensor],
+            src_hidden_state: Tensor,
+            src_attn_mask: Optional[Tensor],
     ) -> Tensor:
         for layer in self.layers:
             x = layer(
                 x=x,
-                mem=mem,
-                tgt_mask=tgt_mask,
-                mem_mask=mem_mask,
+                tgt_attn_mask=tgt_attn_mask,
+                src_hidden_state=src_hidden_state,
+                src_attn_mask=src_attn_mask,
             )
         x = self.norm(x)
         return x
@@ -441,50 +445,50 @@ class Transformer(nn.Module):
             dim_feedforward: feedforward dimension
         """
         super().__init__()
-        self.src_emb = Embedding(
+        self.src_tok_emb = Embedding(
             vocab_size=src_vocab_size,
             dim=dim,
         )
-        self.src_pe = PositionalEncoding(
+        self.src_pos_emb = PositionalEncoding(
             seq_len=src_seq_len,
             dim=dim,
             dropout=dropout,
         )
-        self.tgt_emb = Embedding(
+        self.tgt_tok_emb = Embedding(
             vocab_size=tgt_vocab_size,
             dim=dim
         )
-        self.tgt_pe = PositionalEncoding(
+        self.tgt_pos_emb = PositionalEncoding(
             seq_len=tgt_seq_len,
             dim=dim,
             dropout=dropout,
         )
 
-        encoder_blocks = []
+        enc_blks = []
         for _ in range(n_encoder_layers):
-            encoder_block = EncoderBlock(
+            enc_blk = EncoderBlock(
                 dim=dim,
                 n_heads=n_heads,
                 d_ff=dim_feedforward,
                 dropout=dropout,
             )
-            encoder_blocks.append(encoder_block)
+            enc_blks.append(enc_blk)
         self.encoder = Encoder(
-            layers=nn.ModuleList(modules=encoder_blocks),
+            layers=nn.ModuleList(modules=enc_blks),
             dim=dim,
         )
 
-        decoder_blocks = []
+        dec_blks = []
         for _ in range(n_decoder_layers):
-            decoder_block = DecoderBlock(
+            dec_blk = DecoderBlock(
                 dim=dim,
                 n_heads=n_heads,
                 d_ff=dim_feedforward,
                 dropout=dropout,
             )
-            decoder_blocks.append(decoder_block)
+            dec_blks.append(dec_blk)
         self.decoder = Decoder(
-            layers=nn.ModuleList(modules=decoder_blocks),
+            layers=nn.ModuleList(modules=dec_blks),
             dim=dim,
         )
 
@@ -498,7 +502,7 @@ class Transformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(tensor=p)
 
-    def encode(self, x: Tensor, mask: Tensor) -> Tensor:
+    def encode(self, token_ids: Tensor, mask: Optional[Tensor]) -> Tensor:
         """
         Args:
             x: source tensor
@@ -506,17 +510,20 @@ class Transformer(nn.Module):
         Returns:
             x: encoder output
         """
-        x = self.src_emb(x=x)
-        x = self.src_pe(x=x)
+        x = self.src_tok_emb(x=token_ids)
+        x = self.src_pos_emb(x=x)
+        # [B, L] -> [B, 1, 1, L]
+        mask = mask.unsqueeze(dim=1).unsqueeze(dim=1)
         x = self.encoder(x=x, mask=mask)
+
         return x
 
     def decode(
             self,
-            x: Tensor,
-            mem: Tensor,
-            tgt_mask: Tensor,
-            mem_mask: Tensor,
+            tgt_token_ids: Tensor,
+            tgt_attn_mask: Optional[Tensor],
+            src_hidden_state: Tensor,
+            src_attn_mask: Optional[Tensor],
     ) -> Tensor:
         """
         Args:
@@ -527,33 +534,43 @@ class Transformer(nn.Module):
         Returns:
             x: decoder output
         """
-        x = self.tgt_emb(x=x)
-        x = self.tgt_pe(x=x)
+        x = self.tgt_tok_emb(x=tgt_token_ids)
+        x = self.tgt_pos_emb(x=x)
+        # [B, L-1, L-1] -> # [B, 1, L-1, L-1]
+        tgt_attn_mask = tgt_attn_mask.unsqueeze(dim=1)
+        # [B, L] -> [B, 1, 1, L]
+        src_attn_mask = src_attn_mask.unsqueeze(dim=1).unsqueeze(dim=1)
         x = self.decoder(
             x=x,
-            mem=mem,
-            tgt_mask=tgt_mask,
-            mem_mask=mem_mask,
+            tgt_attn_mask=tgt_attn_mask,
+            src_hidden_state=src_hidden_state,
+            src_attn_mask=src_attn_mask,
         )
+
         return x
 
     def project(self, x: Tensor) -> Tensor:
         x = self.proj(x)
+
         return x
 
     def forward(
             self,
-            src: Tensor,
-            tgt: Tensor,
-            src_mask: Tensor,
-            tgt_mask: Tensor,
+            src_token_ids: Tensor,
+            src_attn_mask: Optional[Tensor],
+            tgt_token_ids: Tensor,
+            tgt_attn_mask: Optional[Tensor],
     ) -> Tensor:
-        mem = self.encode(x=src, mask=src_mask)
-        x = self.decode(
-            x=tgt,
-            mem=mem,
-            tgt_mask=tgt_mask,
-            mem_mask=src_mask,
+        src_hidden_state = self.encode(
+            token_ids=src_token_ids,
+            mask=src_attn_mask,
         )
-        x = self.project(x=x)
+        tgt_hidden_state = self.decode(
+            tgt_token_ids=tgt_token_ids,
+            tgt_attn_mask=tgt_attn_mask,
+            src_hidden_state=src_hidden_state,
+            src_attn_mask=src_attn_mask,
+        )
+        x = self.project(x=tgt_hidden_state)
+
         return x

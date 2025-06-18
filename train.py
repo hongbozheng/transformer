@@ -35,31 +35,30 @@ def train_epoch(
         if i < init_batch:
             continue
 
-        src = batch["src"].to(device=device)
-        tgt = batch["tgt"].to(device=device)
-        src_mask = batch["src_mask"].to(device=device)
-        tgt_mask = batch["tgt_mask"].to(device=device)
-
-        tgt_input = tgt[:, :-1]
+        src_token_ids = batch["src_token_ids"].to(device=device)
+        src_attn_mask = batch["src_attn_mask"].to(device=device)
+        tgt_token_ids = batch["tgt_token_ids"].to(device=device)
+        tgt_attn_mask = batch["tgt_attn_mask"].to(device=device)
+        gt = tgt_token_ids[:, 1:]
+        tgt_token_ids = tgt_token_ids[:, :-1]
 
         optimizer.zero_grad()
         logits = model(
-            src=src,
-            tgt=tgt_input,
-            src_mask=src_mask,
-            tgt_mask=tgt_mask
+            src_token_ids=src_token_ids,
+            src_attn_mask=src_attn_mask,
+            tgt_token_ids=tgt_token_ids,
+            tgt_attn_mask=tgt_attn_mask,
         )
-        tgt_output = tgt[:, 1:]
         loss = criterion(
-            input=logits.reshape(-1, logits.size(dim=-1)),
-            target=tgt_output.reshape(-1)
+            input=logits.view(-1, logits.size(dim=-1)),
+            target=gt.reshape(-1)
         )
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
         optimizer.step()
         lr_scheduler.step_update(n_iters * epoch + i)
 
-        loss_meter.update(loss.item(), n=src.size(dim=0))
+        loss_meter.update(loss.item(), n=src_token_ids.size(dim=0))
         loader_tqdm.set_description(
             desc=f"[{timestamp()}] [Batch {i+1}]: "
                  f"train loss {loss_meter.avg:.6f}",

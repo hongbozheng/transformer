@@ -1,4 +1,5 @@
 from torch import Tensor
+from typing import Dict, List
 
 import torch
 from tokenizer import Tokenizer
@@ -27,58 +28,61 @@ class EquivExpr(Dataset):
     def __len__(self) -> int:
         return len(self.exprs)
 
-    def __getitem__(self, idx: int) -> dict[str, Tensor]:
+    def __getitem__(self, idx: int) -> Dict[str, Tensor]:
         expr = self.exprs[idx]
 
         if not self.val:
-            src_tokens = self.tokenizer.encode(expr=expr[0])
-            tgt_tokens = self.tokenizer.encode(expr=expr[1])
-            return {"src": src_tokens, "tgt": tgt_tokens}
+            src_token_ids = self.tokenizer.encode(expr=expr[0])
+            tgt_token_ids = self.tokenizer.encode(expr=expr[1])
+            return {"src_token_ids": src_token_ids, "tgt_token_ids": tgt_token_ids}
         else:
-            src_tokens = self.tokenizer.encode(expr=expr)
-            return {"src": src_tokens}
+            src_token_ids = self.tokenizer.encode(expr=expr)
+            return {"src_token_ids": src_token_ids}
 
-    def collate_fn(self, batch: list[dict[str, Tensor]]) -> dict[str, Tensor]:
-        src = [item['src'] for item in batch]
-        src = pad_sequence(
-            sequences=src,
+    def collate_fn(self, batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
+        pad_id = self.tokenizer.sym2idx["PAD"]
+
+        src_token_ids = [item['src_token_ids'] for item in batch]
+        # [B, L]
+        src_token_ids = pad_sequence(
+            sequences=src_token_ids,
             batch_first=True,
-            padding_value=self.tokenizer.sym2idx["PAD"],
+            padding_value=pad_id,
         )
         # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
-        # [batch_size, n_heads, 1, seq_len]
-        src_mask = torch.eq(input=src, other=self.tokenizer.sym2idx["PAD"]) \
-            .unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
+        # [B, L]
+        src_attn_mask = torch.eq(input=src_token_ids, other=pad_id) \
+            .to(dtype=torch.bool)
 
         if not self.val:
-            tgt = [item['tgt'] for item in batch]
-            tgt = pad_sequence(
-                sequences=tgt,
+            tgt_token_ids = [item['tgt_token_ids'] for item in batch]
+            # [B, L]
+            tgt_token_ids = pad_sequence(
+                sequences=tgt_token_ids,
                 batch_first=True,
-                padding_value=self.tokenizer.sym2idx["PAD"],
+                padding_value=pad_id,
             )
+            batch, seq_len = tgt_token_ids.size()
             # don't need to feed last token, so -1
-            tgt_mask = torch.triu(
-                input=torch.ones(
-                    size=(tgt.size(dim=0), 1, tgt.size(dim=1) - 1,
-                          tgt.size(dim=1) - 1)
-                ),
-                diagonal=1,
+            # [B, L-1, L-1]
+            tgt_attn_mask = torch.tril(
+                input=torch.ones(size=(batch, seq_len - 1, seq_len - 1)),
+                diagonal=0,
             ).to(dtype=torch.bool)
-            tgt_pad_mask = torch.eq(
-                input=tgt[:, :-1],
-                other=self.tokenizer.sym2idx["PAD"]
-            ).unsqueeze(dim=1).unsqueeze(dim=1).to(dtype=torch.bool)
-            tgt_mask |= tgt_pad_mask
+            # [B, L-1] -> [B, 1, L-1, L-1]
+            tgt_pad_mask = torch.ne(input=tgt_token_ids[:, :-1], other=pad_id) \
+                .to(dtype=torch.bool).unsqueeze(dim=1)
+            # [B, L-1, L-1] & [B, L-1, L-1] -> [B, L-1, L-1]
+            tgt_attn_mask &= tgt_pad_mask
 
             return {
-                "src": src,
-                "tgt": tgt,
-                "src_mask": src_mask,
-                "tgt_mask": tgt_mask,
+                "src_token_ids": src_token_ids,
+                "src_attn_mask": src_attn_mask,
+                "tgt_token_ids": tgt_token_ids,
+                "tgt_attn_mask": tgt_attn_mask,
             }
 
         return {
-            "src": src,
-            "src_mask": src_mask,
+            "src_token_ids": src_token_ids,
+            "src_attn_mask": src_attn_mask,
         }
