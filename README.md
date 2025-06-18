@@ -21,35 +21,33 @@ repository to this repository.
 ```
 cp /path/to/e-gen/data/directory ./
 ```
-- Train data: `data/expr_pairs.txt`
-- Test data: `data/exprs_val.txt`
+- Train data: `data/equiv_pair.txt`
+- Test data: `data/val.txt`
 
 ## Train seq2seq transformer model
 ### Train Configuration
-To modify train configuration, check `config.py` file.
+- To modify train configuration, check `cfgs/models/seq2seq.yaml` file
+- To modify dataset configuration, check `cfgs/datasets/equiv_pair.yaml` file
 
 ### Train
-To train seq2seq transformer model.
+To train seq2seq transformer model
 ```
-./train_tx.py
+./train_model.py --cfgs cfgs/models/seq2seq.yaml --dataset cfgs/datasets/equiv_pair.yaml
 ```
-To train transformer encoder with contrastive learning,
-checkout the `cl` branch.
-```
-git checkout cl
-```
-Follow the instructions in `README.md`.
 
-## Model
-### Saved model
-Saved seq2seq transformer model will be in `models` directory.
+## Train encoder with contrastive learning
+### Train Configuration
+- To modify train configuration, check `cfgs/models/math_enc.yaml` file
+- To modify dataset configuration, check `cfgs/datasets/contrastive_expr.yaml` file
 
-## Test
-### Test Configuration
-To modify test configuration, check `config.py` file.
-
-### Test
-To test seq2seq transformer model.
+### Train
+To train encoder model
 ```
-./test_tx.py
+./train_model.py --cfgs cfgs/models/math_enc.yaml --dataset cfgs/datasets/contrastive_expr.yaml
+```
+
+## Test seq2seq transformer model
+To test seq2seq transformer model
+```
+./test_model.py --cfgs cfgs/models/seq2seq.yaml --dataset cfgs/datasets/equiv_pair.yaml
 ```

@@ -2,5 +2,6 @@ DATA:
   NAME: "contrastive_expr"
   EQUIV_PAIR: null
   VAL: null
+  TEST: null
   CONTRASTIVE_EXPR: "path/to/contrastive_expr"
   N_EXPRS: 5

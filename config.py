@@ -136,6 +136,7 @@ _C.DATA = CN()
 _C.DATA.NAME = None
 _C.DATA.EQUIV_PAIR = None
 _C.DATA.VAL = None
+_C.DATA.TEST = None
 _C.DATA.CONTRASTIVE_EXPR = None
 _C.DATA.N_EXPRS = None
 
@@ -158,6 +159,13 @@ _C.LOADER.VAL.BATCH_SIZE = 256
 _C.LOADER.VAL.SHUFFLE = False
 _C.LOADER.VAL.NUM_WORKERS = 1
 _C.LOADER.VAL.PIN_MEMORY = True
+
+""" Test DataLoader """
+_C.LOADER.TEST = CN()
+_C.LOADER.TEST.BATCH_SIZE = 256
+_C.LOADER.TEST.SHUFFLE = False
+_C.LOADER.TEST.NUM_WORKERS = 1
+_C.LOADER.TEST.PIN_MEMORY = True
 
 
 # -----------------------------------------------------------------------------

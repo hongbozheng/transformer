@@ -101,5 +101,10 @@ def build_dataset(cfg, tokenizer) -> Dict[str, Dataset]:
             filepath=cfg.DATA.VAL,
             tokenizer=tokenizer,
             val=True,
+        ),
+        "test": EquivPair(
+            filepath=cfg.DATA.TEST,
+            tokenizer=tokenizer,
+            val=True,
         )
     }

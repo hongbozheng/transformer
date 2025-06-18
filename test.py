@@ -17,20 +17,20 @@ from val import equiv
 def beam_search(
         model: nn.Module,
         device: torch.device,
-        src: Tensor,
-        src_mask: Tensor,
+        src_token_ids: Tensor,
+        src_attn_mask: Tensor,
         beam_size: int,
         seq_len: int,
         tokenizer: Tokenizer,
 ) -> Tensor:
     # [batch, seq_len, emb_dim]
-    memory = model.encode(x=src, mask=src_mask)
-    print("src mask", src_mask.shape)
-    batch_size, src_seq_len, emb_dim = memory.size()
+    src_hidden_state = model.encode(token_ids=src_token_ids, mask=src_attn_mask)
+    print("src mask", src_attn_mask.shape)
+    B, L, D = src_hidden_state.size()
 
     # [batch, 1] of "SOE"
     beam = torch.full(
-        size=(batch_size, 1),
+        size=(B, 1),
         fill_value=tokenizer.sym2idx["SOE"],
         dtype=torch.int64,
         device=device,
@@ -42,24 +42,24 @@ def beam_search(
 
     # [batch, beam_size, 1]
     done = torch.zeros(
-        size=(batch_size, beam_size),
+        size=(B, beam_size),
         dtype=torch.bool,
         device=device,
     )
 
     # expand the first top-k beam
-    tgt_mask = torch.tril(
+    tgt_attn_mask = torch.tril(
         input=torch.ones(
-            size=(batch_size, 1, beam.size(dim=1), beam.size(dim=1))
+            size=(B, beam.size(dim=1), beam.size(dim=1))
         ),
         diagonal=0,
-    ).to(dtype=torch.uint8).to(device=device)
+    ).to(dtype=torch.bool).to(device=device)
     # [batch x curr_len (1) x emb_dim]
     logits = model.decode(
-        x=beam,
-        memory=memory,
-        tgt_mask=tgt_mask,
-        mem_mask=src_mask,
+        tgt_token_ids=beam,
+        tgt_attn_mask=tgt_attn_mask,
+        src_hidden_state=src_hidden_state,
+        src_attn_mask=src_attn_mask,
     )
     print("logits", logits.shape)
     # [batch x vocab_size]
@@ -71,7 +71,7 @@ def beam_search(
     print("log_probs", log_probs.shape)
     print(log_probs)
     beam_scores, nxt_tokens = torch.topk(log_probs, beam_size, dim=1, largest=True, sorted=True)
-    beam_scores = beam_scores.view(batch_size*beam_size)
+    beam_scores = beam_scores.view(B * beam_size)
     print("beam_scores", beam_scores.shape)
     print(beam_scores)
     print("nxt_tokens", nxt_tokens.shape)
@@ -80,7 +80,7 @@ def beam_search(
     beam = beam.unsqueeze(dim=1).expand(-1, beam_size, -1)
     print("beam", beam.shape)
     print(beam)
-    nxt_tokens = nxt_tokens.view(batch_size, beam_size, 1)
+    nxt_tokens = nxt_tokens.view(B, beam_size, 1)
     print("nxt_tokens", nxt_tokens.shape)
     print(nxt_tokens)
     beam = torch.cat(tensors=[beam, nxt_tokens], dim=-1)
@@ -89,32 +89,32 @@ def beam_search(
     print("=============over============================================")
 
     # [batch, src_seq_len, emb_dim] -> [batch, beam, src_seq_len, emb_dim]
-    memory = memory.unsqueeze(dim=1).expand(-1, beam_size, -1, -1)
+    src_hidden_state = src_hidden_state.unsqueeze(dim=1).expand(-1, beam_size, -1, -1)
     # [batch, beam, src_seq_len, emb_dim] -> [batch*beam, src_seq_len, emb_dim]
-    memory = memory.contiguous().view(batch_size*beam_size, src_seq_len, emb_dim)
-    print("mem", memory.shape)
-    # [batch, 1, 1, src_seq_len] -> [batch, beam, 1, 1, src_seq_len]
-    src_mask = src_mask.unsqueeze(dim=1).expand(-1, beam_size, -1, -1, -1)
-    # [batch, beam, 1, 1, src_seq_len] -> [batch*beam, 1, 1, src_seq_len]
-    src_mask = src_mask.contiguous().view(batch_size*beam_size, 1, 1, src_seq_len)
-    print(src_mask.shape)
+    src_hidden_state = src_hidden_state.contiguous().view(B * beam_size, L, D)
+    print("mem", src_hidden_state.shape)
+    # [batch, src_seq_len] -> [batch, beam, src_seq_len]
+    src_attn_mask = src_attn_mask.unsqueeze(dim=1).expand(-1, beam_size, -1)
+    # [batch, beam, src_seq_len] -> [batch*beam, src_seq_len]
+    src_attn_mask = src_attn_mask.contiguous().view(B * beam_size, L)
+    print(src_attn_mask.shape)
 
-    for i in range(seq_len-2):
+    for _ in range(seq_len - 2):
         # [batch, beam, curr_len] -> [batch*beam, curr_len]
-        beam = beam.view(batch_size*beam_size, -1)
-        tgt_mask = torch.tril(
+        beam = beam.view(B * beam_size, -1)
+        tgt_attn_mask = torch.tril(
             input=torch.ones(
-                size=(batch_size*beam_size, 1, beam.size(dim=1), beam.size(dim=1))
+                size=(B * beam_size, beam.size(dim=1), beam.size(dim=1))
             ),
             diagonal=0,
-        ).to(dtype=torch.uint8).to(device=device)
-        print("tgt mask", tgt_mask.shape)
+        ).to(dtype=torch.bool).to(device=device)
+        print("tgt mask", tgt_attn_mask.shape)
         # [batch*beam x curr_len x emb_dim]
         logits = model.decode(
-            x=beam,
-            memory=memory,
-            tgt_mask=tgt_mask,
-            mem_mask=src_mask,
+            tgt_token_ids=beam,
+            tgt_attn_mask=tgt_attn_mask,
+            src_hidden_state=src_hidden_state,
+            src_attn_mask=src_attn_mask,
         )
         print("decode", logits.shape)
 
@@ -134,7 +134,7 @@ def beam_search(
         log_probs += beam_scores.unsqueeze(dim=-1).expand(-1, vocab_size)
         print("log_probs", log_probs.shape)
         print(log_probs)
-        log_probs = log_probs.view(batch_size, beam_size*vocab_size)
+        log_probs = log_probs.view(B, beam_size*vocab_size)
         print("log_probs", log_probs.shape)
         print(log_probs)
         nxt_scores, nxt_tokens = torch.topk(log_probs, beam_size, dim=1, largest=True, sorted=True)
@@ -154,7 +154,7 @@ def beam_search(
         print("beam ids", beam_ids.shape)
         print(beam_ids)
 
-        beam = beam.view(batch_size, beam_size, -1)
+        beam = beam.view(B, beam_size, -1)
         beam = beam.gather(dim=1, index=beam_ids)
         print("beam", beam.shape)
         print(beam)
@@ -223,9 +223,9 @@ def calc_acc(src: Tensor, tgt: Tensor, tokenizer: Tokenizer) -> float:
 
 def test_model(
         model: nn.Module,
-        device: torch.device,
         ckpt_filepath: str,
-        test_loader: DataLoader,
+        dataloader: DataLoader,
+        device: torch.device,
         seq_len: int,
         tokenizer: Tokenizer,
 ) -> None:
@@ -238,28 +238,28 @@ def test_model(
         filename = os.path.basename(p=ckpt_filepath)
         logger.log_info(f"Loaded '{filename}'")
 
-    loader_tqdm = tqdm(iterable=test_loader, position=0, leave=False)
+    loader_tqdm = tqdm(iterable=dataloader, position=0, leave=False)
     loader_tqdm.set_description(desc=f"[{timestamp()}] [Batch 0]", refresh=True)
 
     acc_meter = AverageMeter()
 
     with torch.no_grad():
         for i, batch in enumerate(loader_tqdm):
-            src = batch["src"].to(device=device)
-            src_mask = batch["src_mask"].to(device=device)
-            print(src, src_mask.shape)
+            src_token_ids = batch["src_token_ids"].to(device=device)
+            src_attn_mask = batch["src_attn_mask"].to(device=device)
+            print(src_token_ids, src_attn_mask.shape)
             # [batch x n_beams x seq_len]
             beam = beam_search(
                 model=model,
                 device=device,
-                src=src,
-                src_mask=src_mask,
+                src_token_ids=src_token_ids,
+                src_attn_mask=src_attn_mask,
                 beam_size=10,
                 seq_len=seq_len,
                 tokenizer=tokenizer,
             )
-            acc = calc_acc(src=src, tgt=beam, tokenizer=tokenizer)
-            acc_meter.update(val=acc, n=src.size(dim=0))
+            acc = calc_acc(src=src_token_ids, tgt=beam, tokenizer=tokenizer)
+            acc_meter.update(val=acc, n=src_attn_mask.size(dim=0))
 
             loader_tqdm.set_description(
                 desc=f"[{timestamp()}] [Batch {i+1}]: "

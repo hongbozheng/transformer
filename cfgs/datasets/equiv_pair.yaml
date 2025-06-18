@@ -2,5 +2,6 @@ DATA:
   NAME: "equiv_pair"
   EQUIV_PAIR: "path/to/equiv_pair"
   VAL: "path/to/val"
+  TEST: "path/to/test"
   CONTRASTIVE_EXPR: null
   N_EXPRS: null
