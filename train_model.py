@@ -14,7 +14,9 @@ from train import train_model
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog='2D Medical Image Segementation')
+    parser = argparse.ArgumentParser(
+        prog='semantic representations of mathematical expressions'
+    )
     parser.add_argument(
         '--cfg',
         type=str,
@@ -47,13 +49,7 @@ def main() -> None:
         collate_fn=train_dataset.collate_fn,
         pin_memory=cfg.LOADER.TRAIN.PIN_MEMORY,
     )
-    # for batch in train_loader:
-    #     print(batch["src"], batch["src"].shape)
-    #     print(batch["tgt"], batch["tgt"].shape)
-    #     print(batch["src_mask"])
-    #     print(batch["tgt_mask"])
-    #     break
-    # return
+
     if val_dataset is not None:
         val_loader = DataLoader(
             dataset=val_dataset,

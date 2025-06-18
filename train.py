@@ -203,7 +203,7 @@ def train_model(
             init_batch=init_batch,
             save_every_n_iters=save_every_n_iters,
         )
-        if postprocess is None:
+        if val_loader is not None:
             acc = val_epoch(
                 model=model,
                 val_loader=val_loader,

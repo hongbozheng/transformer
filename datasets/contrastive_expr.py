@@ -33,17 +33,7 @@ class ContrastiveExpr(Dataset):
         pad_id = self.tokenizer.sym2idx["PAD"]
 
         token_ids = [ids for item in batch for ids in item["token_ids"]]
-
-        # ref = []
-        # pos = []
-        # neg = []
-        # for item in batch:
-        #     ref.append(item["ref"])
-        #     pos.append(item["pos"])
-        #     neg.append(item["neg"])
-        # ref.extend(pos)
-        # ref.extend(neg)
-
+        # [B, L]
         token_ids = pad_sequence(
             sequences=token_ids,
             batch_first=True,
