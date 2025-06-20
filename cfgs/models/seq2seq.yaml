@@ -12,6 +12,18 @@ MODEL:
     SRC_SEQ_LEN: 200
     TGT_SEQ_LEN: 200
     INCL_DEC: true
+  MATH_ENC:
+    DIM: 512
+    N_HEADS: 8
+    N_ENCODER_LAYERS: 6
+    N_DECODER_LAYERS: 6
+    DIM_FEEDFORWARD: 2048
+    DROPOUT: 0.0
+    SRC_VOCAB_SIZE: null
+    TGT_VOCAB_SIZE: null
+    SRC_SEQ_LEN: 200
+    TGT_SEQ_LEN: 200
+    INCL_DEC: false
 
 CKPT:
   DIR:  "seq2seq"
@@ -39,8 +51,8 @@ LRS:
     DECAY_RATE: 0.1
 
 CRITERION:
-  NAME: "cross_entropy"
-  CROSS_ENTROPY:
+  NAME: "crossentropy"
+  CROSSENTROPY:
     LABEL_SMOOTHING: 0.1
   INFONCE:
     TEMPERATURE: 0.1
@@ -48,7 +60,10 @@ CRITERION:
   SIMCSE:
     TEMPERATURE: 0.1
     REDUCTION: "mean"
-  CONTRASTIVE_LOSS:
+  MAXSIM:
+    TEMPERATURE: 0.1
+    REDUCTION: "mean"
+  CONTRASTIVE:
     MARGIN: 1.0
     REDUCTION: "mean"
 

@@ -1,3 +1,4 @@
+from torch import Tensor
 from typing import Optional
 
 import os
@@ -12,6 +13,72 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from val import val_epoch
 from utils import train_params
+
+
+def compute_loss(
+        postprocess: Optional[str],
+        criterion: nn.Module,
+        logits: Tensor,
+        gt: Optional[Tensor],
+        src_attn_mask: Tensor,
+        n_exprs: Optional[int],
+) -> float:
+    if postprocess is None:
+        return criterion(
+            input=logits.view(-1, logits.size(dim=-1)),
+            target=gt.reshape(-1),
+        )
+
+    if postprocess == "cls":
+        logits = logits[:, 0, :].view(-1, n_exprs, logits.size(dim=-1))
+
+    elif postprocess in {"mean", "max", "maxsim"}:
+        eoe_ids = src_attn_mask.int().sum(dim=-1) - 1
+        batch_ids = torch.arange(
+            start=0,
+            end=src_attn_mask.size(dim=0),
+            dtype=torch.int64,
+            device=src_attn_mask.device,
+        )
+        src_attn_mask[batch_ids, eoe_ids] = False
+        src_attn_mask[:, 0] = False
+
+        if postprocess == "mean":
+            logits[~src_attn_mask] = 0.0
+            logits = logits.sum(dim=-2, keepdim=False)
+            n_tokens = src_attn_mask.int().sum(dim=1, keepdim=False) \
+                .float().unsqueeze(dim=-1)
+            logits = logits / n_tokens
+        elif postprocess == "max":
+            logits[~src_attn_mask] = float("-inf")
+            logits = logits.max(dim=-2, keepdim=False).values
+
+        elif postprocess == "maxsim":
+            _, L, D = logits.size()
+            logits = logits.view(-1, n_exprs, L, D)
+            src_attn_mask = src_attn_mask.view(-1, n_exprs, L)
+            query = logits[:, 0, :, :]
+            pos_key = logits[:, 1, :, :]
+            neg_key = logits[:, 2:, :, :]
+            query_mask = src_attn_mask[:, 0, :]
+            pos_mask = src_attn_mask[:, 1, :]
+            neg_mask = src_attn_mask[:, 2:, :]
+
+            return criterion(
+                query=query,
+                pos_key=pos_key,
+                neg_key=neg_key,
+                query_mask=query_mask,
+                pos_mask=pos_mask,
+                neg_mask=neg_mask,
+            )
+
+        logits = logits.view(-1, n_exprs, logits.size(dim=-1))
+        query = logits[:, 0, :]
+        pos_key = logits[:, 1, :]
+        neg_key = logits[:, 2:, :]
+
+        return criterion(query=query, pos_key=pos_key, neg_key=neg_key)
 
 
 def train_epoch(
@@ -51,6 +118,7 @@ def train_epoch(
         else:
             tgt_token_ids = None
             tgt_attn_mask = None
+            gt = None
 
         optimizer.zero_grad()
         logits = model(
@@ -59,45 +127,14 @@ def train_epoch(
             tgt_token_ids=tgt_token_ids,
             tgt_attn_mask=tgt_attn_mask,
         )
-        if postprocess is None:
-            loss = criterion(
-                input=logits.view(-1, logits.size(dim=-1)),
-                target=gt.reshape(-1),
-            )
-        else:
-            if postprocess == "cls":
-                logits = logits[:, 0, ...]
-                logits = logits.view(-1, n_exprs, logits.size(dim=-1))
-            elif postprocess in {"mean", "max"}:
-                eoe_ids = src_attn_mask.int().sum(dim=-1) - 1
-                batch_ids = torch.arange(
-                    start=0,
-                    end=src_attn_mask.size(dim=0),
-                    dtype=torch.int64,
-                    device=src_attn_mask.device,
-                )
-                src_attn_mask[batch_ids, eoe_ids] = False
-                src_attn_mask[:, 0] = False
-
-                logits[~src_attn_mask] = 0.0
-
-                logits = logits.view(
-                    -1,
-                    n_exprs,
-                    logits.size(dim=-2),
-                    logits.size(dim=-1),
-                )
-
-                if postprocess == "mean":
-                    logits = logits.mean(dim=-2, keepdim=False)
-                else:
-                    logits, _ = logits.max(dim=-2, keepdim=False)
-
-            query = logits[:, 0, ...]
-            pos_key = logits[:, 1, ...]
-            neg_key = logits[:, 2:, ...]
-            loss = criterion(query=query, pos_key=pos_key, neg_key=neg_key)
-
+        loss = compute_loss(
+            postprocess=postprocess,
+            criterion=criterion,
+            logits=logits,
+            gt=gt,
+            src_attn_mask=src_attn_mask,
+            n_exprs=n_exprs,
+        )
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=max_norm)
         optimizer.step()
