@@ -73,12 +73,12 @@ def compute_loss(
                 neg_mask=neg_mask,
             )
 
-        logits = logits.view(-1, n_exprs, logits.size(dim=-1))
-        query = logits[:, 0, :]
-        pos_key = logits[:, 1, :]
-        neg_key = logits[:, 2:, :]
+    logits = logits.view(-1, n_exprs, logits.size(dim=-1))
+    query = logits[:, 0, :]
+    pos_key = logits[:, 1, :]
+    neg_key = logits[:, 2:, :]
 
-        return criterion(query=query, pos_key=pos_key, neg_key=neg_key)
+    return criterion(query=query, pos_key=pos_key, neg_key=neg_key)
 
 
 def train_epoch(
