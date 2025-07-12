@@ -52,8 +52,8 @@ class EquivPair(Dataset):
         )
         # https://gmongaras.medium.com/how-do-self-attention-masks-work-72ed9382510f
         # [B, L]
-        src_attn_mask = torch.eq(input=src_token_ids, other=pad_id) \
-            .to(dtype=torch.bool)
+        src_attn_mask = torch.ne(input=src_token_ids, other=pad_id) \
+            .to(dtype=torch.int64)
 
         if not self.val:
             tgt_token_ids = [item['tgt_token_ids'] for item in batch]
@@ -69,12 +69,12 @@ class EquivPair(Dataset):
             tgt_attn_mask = torch.tril(
                 input=torch.ones(size=(batch, seq_len - 1, seq_len - 1)),
                 diagonal=0,
-            ).to(dtype=torch.bool)
-            # [B, L-1] -> [B, 1, L-1, L-1]
+            ).to(dtype=torch.int64)
+            # [B, L-1] -> [B, 1, L-1]
             tgt_pad_mask = torch.ne(input=tgt_token_ids[:, :-1], other=pad_id) \
-                .to(dtype=torch.bool).unsqueeze(dim=1)
-            # [B, L-1, L-1] & [B, L-1, L-1] -> [B, L-1, L-1]
-            tgt_attn_mask &= tgt_pad_mask
+                .to(dtype=torch.int64).unsqueeze(dim=1)
+            # [B, L-1, L-1] * [B, 1, L-1] -> [B, L-1, L-1]
+            tgt_attn_mask *= tgt_pad_mask
 
             return {
                 "src_token_ids": src_token_ids,

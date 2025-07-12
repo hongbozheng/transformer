@@ -49,13 +49,12 @@ def greedy_decode(
             input=torch.ones(
                 size=(
                     batch_size,
-                    1,
                     tgt_token_ids.size(dim=1),
                     tgt_token_ids.size(dim=1),
                 )
             ),
             diagonal=0,
-        ).to(dtype=torch.bool).to(device=device)
+        ).to(dtype=torch.int64).to(device=device)
         logits = model.decode(
             tgt_token_ids=tgt_token_ids,
             tgt_attn_mask=tgt_attn_mask,

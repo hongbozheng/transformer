@@ -225,7 +225,9 @@ class MultiHeadAttention(nn.Module):
         # [B, H, L_Q, D_H] @ [B, H, D_H, L_K] -> [B, H, L_Q, L_K]
         scores = q @ k.transpose(dim0=-2, dim1=-1) / math.sqrt(self.head_dim)
         if mask is not None:
-            scores.masked_fill(mask=~mask, value=float('-inf'))
+            print("scores", scores)
+            print(mask)
+            scores = scores + mask
         scores = F.softmax(scores, dim=-1)
 
         if self.dropout is not None:
@@ -521,10 +523,14 @@ class Transformer(nn.Module):
         Returns:
             x: encoder output
         """
+        if mask is not None:
+            # [B, L] -> [B, 1, 1, L]
+            mask = mask.unsqueeze(dim=1).unsqueeze(dim=1)
+            mask = mask.to(dtype=torch.float32)
+            mask = (1.0 - mask) * -10000.0
+
         x = self.src_tok_emb(x=token_ids)
         x = self.src_pos_emb(x=x)
-        # [B, L] -> [B, 1, 1, L]
-        mask = mask.unsqueeze(dim=1).unsqueeze(dim=1)
         x = self.encoder(x=x, mask=mask)
 
         return x
@@ -545,12 +551,20 @@ class Transformer(nn.Module):
         Returns:
             x: decoder output
         """
+        if tgt_attn_mask is not None:
+            # [B, L-1, L-1] -> # [B, 1, L-1, L-1]
+            tgt_attn_mask = tgt_attn_mask.unsqueeze(dim=1)
+            tgt_attn_mask = tgt_attn_mask.to(dtype=torch.float32)
+            tgt_attn_mask = (1.0 - tgt_attn_mask) * -10000.0
+
+        if src_attn_mask is not None:
+            # [B, L] -> [B, 1, 1, L]
+            src_attn_mask = src_attn_mask.unsqueeze(dim=1).unsqueeze(dim=1)
+            src_attn_mask = src_attn_mask.to(dtype=torch.float32)
+            src_attn_mask = (1.0 - src_attn_mask) * -10000.0
+
         x = self.tgt_tok_emb(x=tgt_token_ids)
         x = self.tgt_pos_emb(x=x)
-        # [B, L-1, L-1] -> # [B, 1, L-1, L-1]
-        tgt_attn_mask = tgt_attn_mask.unsqueeze(dim=1)
-        # [B, L] -> [B, 1, 1, L]
-        src_attn_mask = src_attn_mask.unsqueeze(dim=1).unsqueeze(dim=1)
         x = self.decoder(
             x=x,
             tgt_attn_mask=tgt_attn_mask,
