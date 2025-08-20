@@ -89,7 +89,7 @@ def build_scheduler(cfg, optimizer: optim.Optimizer) -> Scheduler:
         lr_scheduler = LinearLRScheduler(
             optimizer,
             t_initial=n_steps,
-            lr_min_rate=0.01,
+            lr_min_rate=cfg.OPTIM.MIN_LR,
             warmup_lr_init=cfg.OPTIM.WARMUP_LR,
             warmup_t=warmup_steps,
             t_in_epochs=False,
